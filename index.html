@@ -1,171 +1,171 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Annuaire des contacts</title>
-  <!-- Icônes FontAwesome -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #f0f8ff, #e6eaf8);
-    }
-
-    /* ==== HEADER ==== */
-    header {
-      background: #1e3a8a;
-      padding: 15px;
-      color: white;
-      text-align: center;
-    }
-    header img {
-      max-width: 100px;
-      border-radius: 50%;
-    }
-    header h1 {
-      margin: 10px 0 0;
-      font-size: 22px;
-    }
-
-    /* ==== FILTRES ==== */
-    #filters {
-      display: flex;
-      justify-content: center;
-      gap: 15px;
-      margin: 20px auto;
-      flex-wrap: wrap;
-    }
-    #filters button {
-      padding: 10px 18px;
-      border: none;
-      border-radius: 20px;
-      background: #3b82f6;
-      color: white;
-      cursor: pointer;
-      transition: 0.2s;
-      font-size: 14px;
-    }
-    #filters button:hover {
-      background: #2563eb;
-    }
-
-    /* ==== CONTACTS ==== */
-    #contacts {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
-      padding: 20px;
-    }
-
-    .contact-card {
-      background: white;
-      padding: 16px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      transition: transform 0.2s;
-    }
-    .contact-card:hover {
-      transform: translateY(-5px);
-    }
-
-    .contact-card h3 {
-      margin: 0 0 8px 0;
-      color: #1e40af;
-    }
-
-    .contact-card p {
-      margin: 6px 0;
-      font-size: 14px;
-      color: #374151;
-    }
-
-    .contact-card i {
-      color: #1e3a8a;
-      margin-right: 8px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visualisation Travailleurs</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f5f5f5; }
+    header { background: #4361ee; color:white; padding:20px; text-align:center; }
+    header img { max-height: 80px; display:block; margin:0 auto 10px; }
+    h1 { margin:0; font-size:24px; }
+    .container { max-width:1200px; margin:20px auto; padding:0 20px; }
+    .status-selector { margin:20px 0; text-align:center; }
+    .status-btn { padding:10px 20px; margin:0 5px; border:none; border-radius:5px; cursor:pointer; color:white; }
+    .worker-btn { background:#4cc9f0; }
+    .non-worker-btn { background:#7209b7; }
+    .all-btn { background:#4ade80; }
+    .status-btn.active { box-shadow:0 0 0 3px rgba(0,0,0,0.2); }
+    .contact-card { background:white; padding:15px; margin:10px 0; border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+    .contact-name { font-weight:bold; font-size:16px; margin-bottom:5px; }
+    .contact-detail { margin:3px 0; display:flex; align-items:center; }
+    .contact-detail i { margin-right:8px; width:20px; }
+    table { width:100%; border-collapse: collapse; margin-top:20px; background:white; border-radius:5px; overflow:hidden; }
+    th, td { padding:8px; border-bottom:1px solid #ddd; text-align:left; }
+    th { background:#4361ee; color:white; position:sticky; top:0; }
+    .loading { text-align:center; padding:50px; font-size:18px; }
+    .error { background:#ffebee; color:#c62828; padding:10px; border-radius:5px; margin:10px 0; text-align:center; }
+</style>
 </head>
 <body>
-  <!-- ==== HEADER ==== -->
-  <header>
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/Example.jpg/200px-Example.jpg" alt="Logo" />
-    <h1>Annuaire des Contacts</h1>
-  </header>
+<header>
+    <img src="https://via.placeholder.com/150x80?text=Logo" alt="Logo">
+    <h1>Visualisation Travailleurs et Non-Travailleurs</h1>
+</header>
+<div class="container">
+    <div id="loading" class="loading">Chargement des données...</div>
+    <div id="error" class="error" style="display:none;"></div>
 
-  <!-- ==== FILTRES ==== -->
-  <div id="filters">
-    <button onclick="filterContacts('Tous')">Tous</button>
-    <button onclick="filterContacts('Travailleur')">Travailleurs</button>
-    <button onclick="filterContacts('Non travailleur')">Non travailleurs</button>
-  </div>
+    <div class="status-selector" id="status-section" style="display:none;">
+        <button class="status-btn worker-btn active" id="worker-btn">Travailleurs</button>
+        <button class="status-btn non-worker-btn" id="non-worker-btn">Non-Travailleurs</button>
+        <button class="status-btn all-btn" id="all-btn">Tous</button>
+    </div>
 
-  <!-- ==== CONTACTS ==== -->
-  <div id="contacts">
-    <p>Chargement des données...</p>
-  </div>
+    <div id="contacts"></div>
 
-  <script>
-    // === FILTRAGE ===
-    function filterContacts(statut) {
-      const cards = document.querySelectorAll('.contact-card');
-      cards.forEach(card => {
-        if (statut === 'Tous' || card.getAttribute('data-statut') === statut) {
-          card.style.display = "block";
-        } else {
-          card.style.display = "none";
-        }
-      });
+    <table id="data-table" style="display:none;">
+        <thead>
+            <tr>
+                <th>Statut</th>
+                <th>Nom et prénoms</th>
+                <th>Profession</th>
+                <th>Entreprise</th>
+                <th>Formation</th>
+                <th>Contact</th>
+                <th>Quartier</th>
+                <th>Daara</th>
+                <th>Pays</th>
+                <th>Région</th>
+            </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+    </table>
+</div>
+
+<script>
+// URL Google Sheet publique en CSV
+const sheetUrl = "https://docs.google.com/spreadsheets/d/1lQVgkO9AQ3l73MncVuSmIe4UO2LGAmWBXIAARTonQKY/gviz/tq?tqx=out:csv&sheet=liste";
+
+let rawData = [];
+let currentStatus = 'Travailleur';
+
+document.getElementById('worker-btn').addEventListener('click', () => setStatus('Travailleur'));
+document.getElementById('non-worker-btn').addEventListener('click', () => setStatus('Non-Travailleur'));
+document.getElementById('all-btn').addEventListener('click', () => setStatus('Tous'));
+
+function setStatus(status) {
+    currentStatus = status;
+    document.getElementById('worker-btn').classList.toggle('active', status==='Travailleur');
+    document.getElementById('non-worker-btn').classList.toggle('active', status==='Non-Travailleur');
+    document.getElementById('all-btn').classList.toggle('active', status==='Tous');
+    render();
+}
+
+// Parser CSV simple compatible guillemets
+function parseCSV(text) {
+    const lines = text.split("\n");
+    const result = [];
+    const headers = lines[0].split(",");
+    for(let i=1;i<lines.length;i++){
+        let obj = {};
+        let row = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+        if(!row) continue;
+        headers.forEach((h,j)=>obj[h.trim()]=row[j]?row[j].replace(/^"|"$/g,'').trim():'');
+        result.push(obj);
     }
+    return result;
+}
 
-    // === GOOGLE SHEET ===
-    const sheetUrl = "https://docs.google.com/spreadsheets/d/1lQVgO9AQ3l73MncVuSmIe4UO2LGAmWBXIAARTonQKY/gviz/tq?tqx=out:csv&sheet=liste";
+// Charger les données
+fetch(sheetUrl)
+    .then(resp=>resp.text())
+    .then(text=>{
+        rawData = parseCSV(text);
+        document.getElementById('loading').style.display='none';
+        document.getElementById('status-section').style.display='block';
+        render();
+    })
+    .catch(err=>{
+        document.getElementById('loading').style.display='none';
+        const e = document.getElementById('error');
+        e.textContent = "Erreur de chargement : " + err;
+        e.style.display='block';
+    });
 
-    async function fetchData() {
-      try {
-        const res = await fetch(sheetUrl);
-        const text = await res.text();
+function render() {
+    const container = document.getElementById('contacts');
+    const tbody = document.getElementById('table-body');
+    const table = document.getElementById('data-table');
+    container.innerHTML='';
+    tbody.innerHTML='';
+    const filtered = rawData.filter(r=>{
+        if(currentStatus==='Tous') return true;
+        return (r.Statut||'').toLowerCase()===currentStatus.toLowerCase();
+    });
 
-        const rows = text.split("\n").map(r => r.split(","));
-        const headers = rows[0];
-        const data = rows.slice(1);
+    if(filtered.length===0){
+        container.innerHTML='<p>Aucune donnée correspondante</p>';
+        table.style.display='none';
+        return;
+    }
+    table.style.display='table';
+    filtered.forEach(p=>{
+        const card = document.createElement('div');
+        card.className='contact-card';
+        const name = p['Nom et prénoms'] || '';
+        const profession = p.Profession || '';
+        const entreprise = p.Entreprise || '';
+        const formation = p.Formation || '';
+        const contact = p.Contact || '';
+        const quartier = p.Quartier || '';
+        const daara = p.Daara || '';
+        const pays = p.Pays || '';
+        const region = p.Région || '';
+        card.innerHTML=`
+            <div class="contact-name">${name}</div>
+            <div class="contact-detail"><i class="fas fa-briefcase"></i>${profession}</div>
+            <div class="contact-detail"><i class="fas fa-building"></i>${entreprise}</div>
+            <div class="contact-detail"><i class="fas fa-graduation-cap"></i>${formation}</div>
+            <div class="contact-detail"><i class="fas fa-phone"></i>${contact}</div>
+            <div class="contact-detail"><i class="fas fa-map-marker-alt"></i>${quartier}</div>
+            <div class="contact-detail"><i class="fas fa-school"></i>${daara}</div>
+            <div class="contact-detail"><i class="fas fa-flag"></i>${pays}</div>
+            <div class="contact-detail"><i class="fas fa-globe"></i>${region}</div>
+        `;
+        container.appendChild(card);
 
-        const contactsDiv = document.getElementById("contacts");
-        contactsDiv.innerHTML = "";
-
-        data.forEach(row => {
-          if (row.length < 5) return;
-
-          const contact = {};
-          headers.forEach((h, i) => contact[h.trim()] = row[i]?.trim());
-
-          const card = document.createElement("div");
-          card.className = "contact-card";
-          card.setAttribute("data-statut", contact["Statut"] || "Inconnu");
-
-          card.innerHTML = `
-            <h3>${contact["Nom et prénoms"] || ""}</h3>
-            <p><i class="fa fa-phone"></i><a href="tel:${contact["Contact"] || ""}">${contact["Contact"] || ""}</a></p>
-            <p><i class="fa fa-briefcase"></i> ${contact["Profession"] || ""}</p>
-            <p><i class="fa fa-industry"></i> ${contact["Entreprise"] || ""}</p>
-            <p><i class="fa fa-map-marker-alt"></i> ${contact["Quartier"] || ""}</p>
-            <p><i class="fa fa-graduation-cap"></i> ${contact["Formation"] || ""}</p>
-            <p><i class="fa fa-book"></i> ${contact["Daara"] || ""}</p>
-            <p><i class="fa fa-flag"></i> ${contact["Pays"] || ""}</p>
-            <p><i class="fa fa-location-dot"></i> ${contact["Région"] || ""}</p>
-            <p><strong>Statut :</strong> ${contact["Statut"] || ""}</p>
-          `;
-          contactsDiv.appendChild(card);
+        const tr = document.createElement('tr');
+        ['Statut','Nom et prénoms','Profession','Entreprise','Formation','Contact','Quartier','Daara','Pays','Région'].forEach(k=>{
+            const td = document.createElement('td');
+            td.textContent = p[k] || '';
+            tr.appendChild(td);
         });
-
-      } catch (e) {
-        document.getElementById("contacts").innerHTML = "<p style='color:red;'>Erreur lors du chargement des données.</p>";
-        console.error("Erreur Google Sheet :", e);
-      }
-    }
-
-    fetchData();
-  </script>
+        tbody.appendChild(tr);
+    });
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 </body>
 </html>
