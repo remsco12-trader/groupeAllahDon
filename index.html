@@ -3,19 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Annuaire</title>
+  <title>Annuaire des contacts</title>
+  <!-- Icônes FontAwesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
   <style>
-    /* ==== STYLE GLOBAL ==== */
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       background: linear-gradient(135deg, #f0f8ff, #e6eaf8);
     }
 
-    h1 {
+    /* ==== HEADER ==== */
+    header {
+      background: #1e3a8a;
+      padding: 15px;
+      color: white;
       text-align: center;
-      color: #1e3a8a;
-      margin: 20px 0;
+      position: relative;
+    }
+    header img {
+      max-width: 100px;
+      border-radius: 50%;
+    }
+    header h1 {
+      margin: 10px 0 0;
+      font-size: 22px;
     }
 
     /* ==== BARRE DE FILTRES ==== */
@@ -23,11 +35,11 @@
       display: flex;
       justify-content: center;
       gap: 15px;
-      margin-bottom: 20px;
+      margin: 20px auto;
       flex-wrap: wrap;
     }
     #filters button {
-      padding: 10px 16px;
+      padding: 10px 18px;
       border: none;
       border-radius: 20px;
       background: #3b82f6;
@@ -43,7 +55,7 @@
     /* ==== LISTE DES CONTACTS ==== */
     #contacts {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 20px;
       padding: 20px;
     }
@@ -60,7 +72,7 @@
     }
 
     .contact-card h3 {
-      margin: 0;
+      margin: 0 0 8px 0;
       color: #1e40af;
     }
 
@@ -70,44 +82,51 @@
       color: #374151;
     }
 
-    .contact-card a {
-      color: #2563eb;
-      text-decoration: none;
-      font-weight: bold;
+    .contact-card i {
+      color: #1e3a8a;
+      margin-right: 8px;
     }
   </style>
 </head>
 <body>
-  <h1>Annuaire des contacts</h1>
+  <!-- ==== ENTÊTE ==== -->
+  <header>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/Example.jpg/200px-Example.jpg" alt="Logo" />
+    <h1>Annuaire des Contacts</h1>
+  </header>
 
-  <!-- Barre de filtres -->
+  <!-- ==== FILTRES ==== -->
   <div id="filters">
     <button onclick="filterContacts('Tous')">Tous</button>
     <button onclick="filterContacts('Travailleur')">Travailleurs</button>
     <button onclick="filterContacts('Non travailleur')">Non travailleurs</button>
   </div>
 
-  <!-- Liste de contacts -->
+  <!-- ==== LISTE DE CONTACTS ==== -->
   <div id="contacts">
-    <!-- Exemple fictif pour test visuel -->
+    <!-- Exemple fictif pour test -->
     <div class="contact-card" data-statut="Travailleur">
       <h3>Jean Dupont</h3>
-      <p><strong>Téléphone :</strong> <a href="tel:+33123456789">+33 1 23 45 67 89</a></p>
-      <p><strong>Profession :</strong> Enseignant</p>
-      <p><strong>Quartier :</strong> Bamako-Coura</p>
+      <p><i class="fa fa-phone"></i><a href="tel:+33123456789">+33 1 23 45 67 89</a></p>
+      <p><i class="fa fa-briefcase"></i> Enseignant</p>
+      <p><i class="fa fa-map-marker-alt"></i> Bamako-Coura</p>
+      <p><i class="fa fa-graduation-cap"></i> Licence</p>
+      <p><i class="fa fa-flag"></i> Mali</p>
       <p><strong>Statut :</strong> Travailleur</p>
     </div>
     <div class="contact-card" data-statut="Non travailleur">
       <h3>Fatoumata Koné</h3>
-      <p><strong>Téléphone :</strong> <a href="tel:+22398765432">+223 98 76 54 32</a></p>
-      <p><strong>Profession :</strong> Étudiante</p>
-      <p><strong>Quartier :</strong> ACI 2000</p>
+      <p><i class="fa fa-phone"></i><a href="tel:+22398765432">+223 98 76 54 32</a></p>
+      <p><i class="fa fa-briefcase"></i> Étudiante</p>
+      <p><i class="fa fa-map-marker-alt"></i> ACI 2000</p>
+      <p><i class="fa fa-graduation-cap"></i> Master</p>
+      <p><i class="fa fa-flag"></i> Mali</p>
       <p><strong>Statut :</strong> Non travailleur</p>
     </div>
   </div>
 
   <script>
-    // Fonction de filtrage
+    // === FILTRAGE ===
     function filterContacts(statut) {
       const cards = document.querySelectorAll('.contact-card');
       cards.forEach(card => {
@@ -119,7 +138,7 @@
       });
     }
 
-    // === LECTURE GOOGLE SHEET ===
+    // === REMPLACER DONNÉES PAR GOOGLE SHEET ===
     const sheetUrl = "https://docs.google.com/spreadsheets/d/1lQVgkO9AQ3l73MncVuSmIe4UO2LGAmWBXIAARTonQKY/gviz/tq?tqx=out:csv&sheet=liste";
 
     async function fetchData() {
@@ -132,7 +151,7 @@
         const data = rows.slice(1);
 
         const contactsDiv = document.getElementById("contacts");
-        contactsDiv.innerHTML = ""; // Efface les données fictives
+        contactsDiv.innerHTML = "";
 
         data.forEach(row => {
           if (row.length < 7) return;
@@ -146,16 +165,15 @@
 
           card.innerHTML = `
             <h3>${contact["Nom"] || ""} ${contact["Prénom"] || ""}</h3>
-            <p><strong>Téléphone :</strong> <a href="tel:${contact["Téléphone"] || ""}">${contact["Téléphone"] || ""}</a></p>
-            <p><strong>Profession :</strong> ${contact["Profession"] || ""}</p>
-            <p><strong>Quartier :</strong> ${contact["Quartier"] || ""}</p>
-            <p><strong>Formation :</strong> ${contact["Formation"] || ""}</p>
-            <p><strong>Daara :</strong> ${contact["Daara"] || ""}</p>
+            <p><i class="fa fa-phone"></i><a href="tel:${contact["Téléphone"] || ""}">${contact["Téléphone"] || ""}</a></p>
+            <p><i class="fa fa-briefcase"></i> ${contact["Profession"] || ""}</p>
+            <p><i class="fa fa-map-marker-alt"></i> ${contact["Quartier"] || ""}</p>
+            <p><i class="fa fa-graduation-cap"></i> ${contact["Formation"] || ""}</p>
+            <p><i class="fa fa-flag"></i> ${contact["Pays"] || ""}</p>
             <p><strong>Statut :</strong> ${contact["Statut"] || ""}</p>
           `;
           contactsDiv.appendChild(card);
         });
-
       } catch (e) {
         console.error("Erreur Google Sheet :", e);
       }
