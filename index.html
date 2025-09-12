@@ -127,49 +127,6 @@
             box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.2);
         }
         
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .control-group {
-            flex: 1;
-            min-width: 250px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: var(--secondary-color);
-        }
-        
-        input, select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: var(--border-radius);
-            font-size: 1rem;
-        }
-        
-        button {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 600;
-            transition: background-color 0.3s;
-        }
-        
-        button:hover {
-            background-color: var(--secondary-color);
-        }
-        
         .chart-container {
             position: relative;
             height: 400px;
@@ -211,6 +168,11 @@
             padding: 15px;
             border-radius: var(--border-radius);
             box-shadow: var(--box-shadow);
+            transition: transform 0.2s;
+        }
+        
+        .contact-card:hover {
+            transform: translateY(-3px);
         }
         
         .contact-name {
@@ -354,11 +316,11 @@
                 flex-direction: column;
             }
             
-            .controls, .filters, .stats {
+            .filters, .stats {
                 flex-direction: column;
             }
             
-            .control-group, .filter-item, .stat-card {
+            .filter-item, .stat-card {
                 width: 100%;
             }
             
@@ -376,33 +338,14 @@
     <div class="container">
         <header>
             <h1>Visualisation de Bégué Baara</h1>
-            <p class="description">Chargez vos données puis sélectionnez le statut des personnes à afficher</p>
+            <p class="description">Visualisation des données des travailleurs et non-travailleurs</p>
         </header>
         
-        <div class="card">
-            <div class="card-title">
-                <span><i class="fas fa-database"></i> Chargement des données</span>
-            </div>
-            
-            <div class="controls">
-                <div class="control-group">
-                    <label for="sheet-url">URL publique de votre Google Sheet</label>
-                    <input type="text" id="sheet-url" placeholder="https://docs.google.com/spreadsheets/d/...">
-                </div>
-                <div class="control-group">
-                    <label for="sheet-name">Nom de la feuille (optionnel)</label>
-                    <input type="text" id="sheet-name" placeholder="Feuille 1">
-                </div>
-            </div>
-            
-            <button id="load-data">Charger les données</button>
-            
-            <div id="loading" class="loading hidden">
-                <i class="fas fa-spinner fa-spin"></i> Chargement des données...
-            </div>
-            
-            <div id="error-message" class="error hidden"></div>
+        <div id="loading" class="loading">
+            <i class="fas fa-spinner fa-spin"></i> Chargement des données...
         </div>
+        
+        <div id="error-message" class="error hidden"></div>
         
         <div id="status-section" class="hidden">
             <div class="card">
@@ -475,24 +418,20 @@
             <div class="card">
                 <div class="card-title">
                     <span><i class="fas fa-chart-bar"></i> Graphique des données</span>
-                    <div class="chart-type-selector">
-                        <button class="chart-type-btn active" data-chart-type="daara">
-                            Par Daara
-                        </button>
-                        <button class="chart-type-btn" data-chart-type="quartier">
-                            Par Quartier
-                        </button>
-                        <button class="chart-type-btn" data-chart-type="formation">
-                            Par Formation
-                        </button>
-                    </div>
-                    <select id="chart-type">
-                        <option value="bar">Graphique à barres</option>
-                        <option value="line">Graphique linéaire</option>
-                        <option value="pie">Graphique circulaire</option>
-                        <option value="doughnut">Graphique en beignet</option>
-                    </select>
                 </div>
+                
+                <div class="chart-type-selector">
+                    <button class="chart-type-btn active" data-chart-type="daara">Par Daara</button>
+                    <button class="chart-type-btn" data-chart-type="quartier">Par Quartier</button>
+                    <button class="chart-type-btn" data-chart-type="formation">Par Formation</button>
+                </div>
+                
+                <select id="chart-type" class="hidden">
+                    <option value="bar">Graphique à barres</option>
+                    <option value="line">Graphique linéaire</option>
+                    <option value="pie">Graphique circulaire</option>
+                    <option value="doughnut">Graphique en beignet</option>
+                </select>
                 
                 <div class="chart-container">
                     <canvas id="data-chart"></canvas>
@@ -508,9 +447,6 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Références aux éléments DOM
-            const sheetUrlInput = document.getElementById('sheet-url');
-            const sheetNameInput = document.getElementById('sheet-name');
-            const loadDataButton = document.getElementById('load-data');
             const loadingElement = document.getElementById('loading');
             const errorMessageElement = document.getElementById('error-message');
             const statusSection = document.getElementById('status-section');
@@ -533,11 +469,11 @@
             let headers = [];
             let filteredData = [];
             let currentStatus = 'Travailleur'; // Par défaut
-            let currentChartDataType = 'daara'; // Par défaut
+            let currentChartType = 'daara'; // Par défaut
             let importantColumns = ['Nom', 'Prenom', 'Contact', 'Daara', 'Quartier', 'Pays'];
 
-            // Événement pour charger les données
-            loadDataButton.addEventListener('click', loadDataFromSheet);
+            // Configuration de la source de données
+            const sheetUrl = "https://docs.google.com/spreadsheets/d/1lQVgkO9AQ3l73MncVuSmIe4UO2LGAmWBXIAARTonQKY/gviz/tq?tqx=out:csv&sheet=liste";
             
             // Événement pour changer le type de graphique
             chartTypeSelect.addEventListener('change', updateChart);
@@ -550,32 +486,21 @@
                 button.addEventListener('click', function() {
                     chartTypeButtons.forEach(btn => btn.classList.remove('active'));
                     this.classList.add('active');
-                    currentChartDataType = this.dataset.chartType;
+                    currentChartType = this.getAttribute('data-chart-type');
                     updateChart();
                 });
             });
             
+            // Charger les données automatiquement au chargement de la page
+            loadDataFromSheet();
+            
             // Fonction pour charger les données depuis Google Sheets
             function loadDataFromSheet() {
-                const sheetUrl = sheetUrlInput.value.trim();
-                const sheetName = sheetNameInput.value.trim() || 'Feuille 1';
-                
-                if (!sheetUrl) {
-                    showError('Veuillez entrer l\'URL de votre Google Sheet');
-                    return;
-                }
-                
-                // Convertir l'URL de partage en URL CSV
-                let csvUrl = https://cors-anywhere.herokuapp.com/${sheetUrl.replace(/\/edit.*?$/, '/gviz/tq?tqx=out:csv')};
-                if (sheetName) {
-                    csvUrl += &sheet=${encodeURIComponent(sheetName)};
-                }
-                
                 loadingElement.classList.remove('hidden');
                 errorMessageElement.classList.add('hidden');
                 
                 // Charger les données CSV avec PapaParse
-                Papa.parse(csvUrl, {
+                Papa.parse(sheetUrl, {
                     download: true,
                     header: true,
                     skipEmptyLines: true,
@@ -657,63 +582,6 @@
                     <div class="stat-value">${statusData.length}</div>
                 `;
                 statsContainer.appendChild(totalStat);
-                
-                // Compter les formations
-                const formations = {};
-                statusData.forEach(item => {
-                    const formation = item.Formation || item.formation || 'Non spécifiée';
-                    formations[formation] = (formations[formation] || 0) + 1;
-                });
-                
-                // Trouver la formation la plus courante
-                let mostCommonFormation = 'Aucune';
-                let maxCount = 0;
-                
-                for (const formation in formations) {
-                    if (formations[formation] > maxCount) {
-                        mostCommonFormation = formation;
-                        maxCount = formations[formation];
-                    }
-                }
-                
-                const formationStat = document.createElement('div');
-                formationStat.className = 'stat-card';
-                formationStat.innerHTML = `
-                    <div class="stat-label">Formation principale</div>
-                    <div class="stat-value">${mostCommonFormation}</div>
-                    <div class="stat-label">${maxCount} personne(s)</div>
-                `;
-                statsContainer.appendChild(formationStat);
-                
-                // Compter les daaras (insensible à la casse)
-                const daaras = {};
-                statusData.forEach(item => {
-                    const daara = (item.Daara || item.daara || 'Non spécifié').toLowerCase();
-                    daaras[daara] = (daaras[daara] || 0) + 1;
-                });
-                
-                // Trouver le daara le plus courant
-                let mostCommonDaara = 'Aucun';
-                let maxDaaraCount = 0;
-                
-                for (const daara in daaras) {
-                    if (daaras[daara] > maxDaaraCount) {
-                        mostCommonDaara = daara;
-                        maxDaaraCount = daaras[daara];
-                    }
-                }
-                
-                // Formater le nom du daara (première lettre en majuscule)
-                const formattedDaara = mostCommonDaara.charAt(0).toUpperCase() + mostCommonDaara.slice(1);
-                
-                const daaraStat = document.createElement('div');
-                daaraStat.className = 'stat-card';
-                daaraStat.innerHTML = `
-                    <div class="stat-label">Daara principal</div>
-                    <div class="stat-value">${formattedDaara}</div>
-                    <div class="stat-label">${maxDaaraCount} personne(s)</div>
-                `;
-                statsContainer.appendChild(daaraStat);
             }
             
             // Obtenir les données filtrées par statut
@@ -996,56 +864,37 @@
                     const contactCard = document.createElement('div');
                     contactCard.className = 'contact-card';
                     
-                    // Récupérer le nom et prénom des colonnes exactes du fichier
-                    const name = getColumnValue(person, ['Nom', 'nom', 'NOM']);
-                    const firstName = getColumnValue(person, ['Prenom', 'prenom', 'Prénom', 'prénom', 'PRENOM']);
+                    const name = person.Nom || person.nom || '';
+                    const firstName = person.Prenom || person.prenom || '';
                     const fullName = ${firstName} ${name}.trim();
                     
-                    const phone = getColumnValue(person, ['Contact', 'contact', 'Telephone', 'telephone', 'Téléphone', 'téléphone', 'Tél', 'tél', 'TELEPHONE']);
-                    const daara = getColumnValue(person, ['Daara', 'daara', 'DAARA']);
-                    const quartier = getColumnValue(person, ['Quartier', 'quartier', 'QUARTIER']);
-                    const pays = getColumnValue(person, ['Pays', 'pays', 'PAYS']);
-                    const formation = getColumnValue(person, ['Formation', 'formation', 'FORMATION']);
-                    const profession = getColumnValue(person, ['Profession', 'profession', 'PROFESSION']);
+                    const phone = person.Contact || person.contact || person.Telephone || person.telephone || person.Tél || person.tél || 'Non renseigné';
+                    const daara = person.Daara || person.daara || 'Non renseigné';
+                    const quartier = person.Quartier || person.quartier || 'Non renseigné';
+                    const pays = person.Pays || person.pays || 'Non renseigné';
                     
                     contactCard.innerHTML = `
-                        <div class="contact-name">${fullName || 'Non renseigné'}</div>
+                        <div class="contact-name">${fullName}</div>
+                        <div class="contact-detail">
+                            <i class="fas fa-user"></i>
+                            <span>${fullName}</span>
+                        </div>
                         <div class="contact-detail">
                             <i class="fas fa-phone"></i>
-                            <span>${phone || 'Non renseigné'}</span>
+                            <span>${phone}</span>
                         </div>
                         <div class="contact-detail">
                             <i class="fas fa-school"></i>
-                            <span>${daara || 'Non renseigné'}</span>
+                            <span>${daara}</span>
                         </div>
                         <div class="contact-detail">
                             <i class="fas fa-map-marker-alt"></i>
-                            <span>${quartier || 'Non renseigné'}, ${pays || 'Non renseigné'}</span>
+                            <span>${quartier}, ${pays}</span>
                         </div>
-                        <div class="contact-detail">
-                            <i class="fas fa-graduation-cap"></i>
-                            <span>${formation || 'Non renseignée'}</span>
-                        </div>
-                        ${profession ? `
-                        <div class="contact-detail">
-                            <i class="fas fa-briefcase"></i>
-                            <span>${profession}</span>
-                        </div>
-                        ` : ''}
                     `;
                     
                     contactContainer.appendChild(contactCard);
                 });
-            }
-            
-            // Fonction pour récupérer la valeur d'une colonne indépendamment de la casse
-            function getColumnValue(person, possibleColumnNames) {
-                for (const col of possibleColumnNames) {
-                    if (person[col] !== undefined && person[col] !== null && person[col] !== '') {
-                        return person[col];
-                    }
-                }
-                return '';
             }
             
             // Afficher le tableau de données
@@ -1151,14 +1000,14 @@
                 
                 let chartLabels = [];
                 let chartData = [];
-                let chartTitle = '';
+                let chartLabel = '';
                 
-                // Préparer les données en fonction du type sélectionné
-                if (currentChartDataType === 'daara') {
+                // Préparer les données en fonction du type de graphique sélectionné
+                if (currentChartType === 'daara') {
                     // Graphique des daaras (insensible à la casse)
                     const daaras = {};
                     statusData.forEach(item => {
-                        const daara = (getColumnValue(item, ['Daara', 'daara', 'DAARA']) || 'Non spécifié').toLowerCase();
+                        const daara = (item.Daara || item.daara || 'Non spécifié').toLowerCase();
                         daaras[daara] = (daaras[daara] || 0) + 1;
                     });
                     
@@ -1171,13 +1020,12 @@
                         daara[0].charAt(0).toUpperCase() + daara[0].slice(1)
                     );
                     chartData = sortedDaaras.map(daara => daara[1]);
-                    chartTitle = Répartition des ${currentStatus === 'Tous' ? 'personnes' : currentStatus + 's'} par daara;
-                    
-                } else if (currentChartDataType === 'quartier') {
+                    chartLabel = Nombre de ${currentStatus === 'Tous' ? 'personnes' : currentStatus + 's'} par daara;
+                } else if (currentChartType === 'quartier') {
                     // Graphique des quartiers (insensible à la casse)
                     const quartiers = {};
                     statusData.forEach(item => {
-                        const quartier = (getColumnValue(item, ['Quartier', 'quartier', 'QUARTIER']) || 'Non spécifié').toLowerCase();
+                        const quartier = (item.Quartier || item.quartier || 'Non spécifié').toLowerCase();
                         quartiers[quartier] = (quartiers[quartier] || 0) + 1;
                     });
                     
@@ -1190,13 +1038,12 @@
                         quartier[0].charAt(0).toUpperCase() + quartier[0].slice(1)
                     );
                     chartData = sortedQuartiers.map(quartier => quartier[1]);
-                    chartTitle = Répartition des ${currentStatus === 'Tous' ? 'personnes' : currentStatus + 's'} par quartier;
-                    
-                } else if (currentChartDataType === 'formation') {
+                    chartLabel = Nombre de ${currentStatus === 'Tous' ? 'personnes' : currentStatus + 's'} par quartier;
+                } else if (currentChartType === 'formation') {
                     // Graphique des formations
                     const formations = {};
                     statusData.forEach(item => {
-                        const formation = getColumnValue(item, ['Formation', 'formation', 'FORMATION']) || 'Non spécifiée';
+                        const formation = item.Formation || item.formation || 'Non spécifiée';
                         formations[formation] = (formations[formation] || 0) + 1;
                     });
                     
@@ -1207,7 +1054,7 @@
                     
                     chartLabels = sortedFormations.map(formation => formation[0]);
                     chartData = sortedFormations.map(formation => formation[1]);
-                    chartTitle = Répartition des ${currentStatus === 'Tous' ? 'personnes' : currentStatus + 's'} par formation;
+                    chartLabel = Nombre de ${currentStatus === 'Tous' ? 'personnes' : currentStatus + 's'} par formation;
                 }
                 
                 // Créer le graphique
@@ -1216,7 +1063,7 @@
                     data: {
                         labels: chartLabels,
                         datasets: [{
-                            label: chartTitle,
+                            label: chartLabel,
                             data: chartData,
                             backgroundColor: getChartColors(chartType, chartData.length),
                             borderColor: currentStatus === 'Travailleur' ? '#4cc9f0' : 
@@ -1230,7 +1077,7 @@
                         plugins: {
                             title: {
                                 display: true,
-                                text: chartTitle,
+                                text: Répartition des ${currentStatus === 'Tous' ? 'personnes' : currentStatus + 's'} par ${currentChartType},
                                 font: {
                                     size: 16
                                 }
@@ -1270,6 +1117,4 @@
         });
     </script>
 </body>
-
 </html>
-
