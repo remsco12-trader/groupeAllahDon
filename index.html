@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application de Visualisation - Travailleurs et Non-Travailleurs</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3a0ca3;
+            --accent-color: #f72585;
+            --worker-color: #4cc9f0;
+            --non-worker-color: #7209b7;
+            --all-color: #4ade80;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fb;
+            color: var(--dark-color);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 2rem;
+            box-shadow: var(--box-shadow);
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .description {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--box-shadow);
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .card-title i {
+            margin-right: 10px;
+        }
+        
+        .status-selector {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        
+        .status-btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .worker-btn {
+            background-color: var(--worker-color);
+            color: white;
+        }
+        
+        .non-worker-btn {
+            background-color: var(--non-worker-color);
+            color: white;
+        }
+        
+        .all-btn {
+            background-color: var(--all-color);
+            color: white;
+        }
+        
+        .status-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--box-shadow);
+        }
+        
+        .status-btn.active {
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.2);
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .control-group {
+            flex: 1;
+            min-width: 250px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 20px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .data-table th, .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .data-table th {
+            background-color: var(--primary-color);
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+        
+        .data-table tr:hover {
+            background-color: #f1f5ff;
+        }
+        
+        .contact-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .contact-card {
+            background: linear-gradient(135deg, #f5f7fb, #e4e8f0);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+        
+        .contact-name {
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 5px;
+        }
+        
+        .contact-detail {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .contact-detail i {
+            margin-right: 10px;
+            color: var(--secondary-color);
+            width: 20px;
+        }
+        
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-item {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .search-container {
+            display: flex;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 12px 45px 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        .search-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #777;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+        }
+        
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 1rem;
+        }
+        
+        .stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            flex: 1;
+            min-width: 200px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .chart-type-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .chart-type-btn {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .chart-type-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 1rem;
+            color: #6c757d;
+        }
+        
+        @media (max-width: 768px) {
+            .status-selector {
+                flex-direction: column;
+            }
+            
+            .controls, .filters, .stats {
+                flex-direction: column;
+            }
+            
+            .control-group, .filter-item, .stat-card {
+                width: 100%;
+            }
+            
+            .contact-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-type-selector {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Application de Visualisation des Données</h1>
+            <p class="description">Chargez vos données puis sélectionnez le statut des personnes à afficher</p>
+        </header>
+        
+        <div class="card">
+            <div class="card-title">
+                <span><i class="fas fa-database"></i> Chargement des données</span>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label for="sheet-url">URL publique de votre Google Sheet</label>
+                    <input type="text" id="sheet-url" placeholder="https://docs.google.com/spreadsheets/d/...">
+                </div>
+                <div class="control-group">
+                    <label for="sheet-name">Nom de la feuille (optionnel)</label>
+                    <input type="text" id="sheet-name" placeholder="Feuille 1">
+                </div>
+            </div>
+            
+            <button id="load-data">Charger les données</button>
+            
+            <div id="loading" class="loading hidden">
+                <i class="fas fa-spinner fa-spin"></i> Chargement des données...
+            </div>
+            
+            <div id="error-message" class="error hidden"></div>
+        </div>
+        
+        <div id="status-section" class="hidden">
+            <div class="card">
+                <div class="card-title">
+                    <span><i class="fas fa-users"></i> Sélection du Statut</span>
+                </div>
+                
+                <div class="status-selector">
+                    <button class="status-btn worker-btn active" id="worker-btn">
+                        <i class="fas fa-briefcase"></i> Travailleurs
+                    </button>
+                    <button class="status-btn non-worker-btn" id="non-worker-btn">
+                        <i class="fas fa-user-graduate"></i> Non-Travailleurs
+                    </button>
+                    <button class="status-btn all-btn" id="all-btn">
+                        <i class="fas fa-globe"></i> Tous
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="visualization-section" class="hidden">
+            <div class="stats" id="stats-container">
+                <!-- Les statistiques seront générées dynamiquement -->
+            </div>
+            
+            <div class="card">
+                <div class="card-title">
+                    <span><i class="fas fa-search"></i> Recherche et Filtres</span>
+                </div>
+                
+                <div class="search-container">
+                    <input type="text" id="search-input" class="search-input" placeholder="Rechercher par formation, daara, quartier...">
+                    <i class="fas fa-search search-icon"></i>
+                </div>
+                
+                <div class="filters" id="filters-container">
+                    <!-- Les filtres seront générés dynamiquement -->
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">
+                    <span><i class="fas fa-address-card"></i> Coordonnées</span>
+                </div>
+                
+                <div id="contact-container" class="contact-info">
+                    <!-- Les cartes de contact seront générées dynamiquement -->
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">
+                    <span><i class="fas fa-table"></i> Tableau des données</span>
+                    <span id="result-count"></span>
+                </div>
+                
+                <div id="table-container" style="max-height: 500px; overflow-y: auto;">
+                    <table class="data-table">
+                        <thead id="table-head">
+                            <!-- En-têtes générés dynamiquement -->
+                        </thead>
+                        <tbody id="table-body">
+                            <!-- Données générées dynamiquement -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">
+                    <span><i class="fas fa-chart-bar"></i> Graphique des données</span>
+                    <div class="chart-type-selector">
+                        <button class="chart-type-btn active" data-chart-type="daara">
+                            Par Daara
+                        </button>
+                        <button class="chart-type-btn" data-chart-type="quartier">
+                            Par Quartier
+                        </button>
+                        <button class="chart-type-btn" data-chart-type="formation">
+                            Par Formation
+                        </button>
+                    </div>
+                    <select id="chart-type">
+                        <option value="bar">Graphique à barres</option>
+                        <option value="line">Graphique linéaire</option>
+                        <option value="pie">Graphique circulaire</option>
+                        <option value="doughnut">Graphique en beignet</option>
+                    </select>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="data-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>Application de Visualisation des Données &copy; 2023</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Références aux éléments DOM
+            const sheetUrlInput = document.getElementById('sheet-url');
+            const sheetNameInput = document.getElementById('sheet-name');
+            const loadDataButton = document.getElementById('load-data');
+            const loadingElement = document.getElementById('loading');
+            const errorMessageElement = document.getElementById('error-message');
+            const statusSection = document.getElementById('status-section');
+            const visualizationSection = document.getElementById('visualization-section');
+            const filtersContainer = document.getElementById('filters-container');
+            const chartTypeSelect = document.getElementById('chart-type');
+            const tableHead = document.getElementById('table-head');
+            const tableBody = document.getElementById('table-body');
+            const searchInput = document.getElementById('search-input');
+            const resultCount = document.getElementById('result-count');
+            const statsContainer = document.getElementById('stats-container');
+            const contactContainer = document.getElementById('contact-container');
+            const workerBtn = document.getElementById('worker-btn');
+            const nonWorkerBtn = document.getElementById('non-worker-btn');
+            const allBtn = document.getElementById('all-btn');
+            const chartTypeButtons = document.querySelectorAll('.chart-type-btn');
+            
+            let dataChart = null;
+            let rawData = [];
+            let headers = [];
+            let filteredData = [];
+            let currentStatus = 'Travailleur'; // Par défaut
+            let currentChartDataType = 'daara'; // Par défaut
+            let importantColumns = ['Nom', 'Prenom', 'Contact', 'Daara', 'Quartier', 'Pays'];
+
+            // Événement pour charger les données
+            loadDataButton.addEventListener('click', loadDataFromSheet);
+            
+            // Événement pour changer le type de graphique
+            chartTypeSelect.addEventListener('change', updateChart);
+            
+            // Événement pour la recherche
+            searchInput.addEventListener('input', applySearch);
+            
+            // Événements pour les boutons de type de graphique
+            chartTypeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    chartTypeButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    currentChartDataType = this.dataset.chartType;
+                    updateChart();
+                });
+            });
+            
+            // Fonction pour charger les données depuis Google Sheets
+            function loadDataFromSheet() {
+                const sheetUrl = sheetUrlInput.value.trim();
+                const sheetName = sheetNameInput.value.trim() || 'Feuille 1';
+                
+                if (!sheetUrl) {
+                    showError('Veuillez entrer l\'URL de votre Google Sheet');
+                    return;
+                }
+                
+                // Convertir l'URL de partage en URL CSV
+                let csvUrl = sheetUrl.replace(/\/edit.*?$/, '/gviz/tq?tqx=out:csv');
+                if (sheetName) {
+                    csvUrl += &sheet=${encodeURIComponent(sheetName)};
+                }
+                
+                loadingElement.classList.remove('hidden');
+                errorMessageElement.classList.add('hidden');
+                
+                // Charger les données CSV avec PapaParse
+                Papa.parse(csvUrl, {
+                    download: true,
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        loadingElement.classList.add('hidden');
+                        
+                        if (results.errors.length > 0) {
+                            showError('Erreur lors du parsing des données: ' + results.errors[0].message);
+                            return;
+                        }
+                        
+                        if (results.data.length === 0) {
+                            showError('Aucune donnée trouvée dans la feuille spécifiée');
+                            return;
+                        }
+                        
+                        processData(results.data, results.meta.fields);
+                    },
+                    error: function(error) {
+                        loadingElement.classList.add('hidden');
+                        showError('Erreur lors du chargement des données: ' + error.message);
+                    }
+                });
+            }
+            
+            // Traiter les données chargées
+            function processData(data, fields) {
+                rawData = data;
+                headers = fields;
+                filteredData = [...rawData];
+                
+                // Afficher la section de statut
+                statusSection.classList.remove('hidden');
+                
+                // Ajouter les événements pour les boutons de statut
+                workerBtn.addEventListener('click', function() {
+                    workerBtn.classList.add('active');
+                    nonWorkerBtn.classList.remove('active');
+                    allBtn.classList.remove('active');
+                    currentStatus = 'Travailleur';
+                    applyFilters();
+                });
+                
+                nonWorkerBtn.addEventListener('click', function() {
+                    nonWorkerBtn.classList.add('active');
+                    workerBtn.classList.remove('active');
+                    allBtn.classList.remove('active');
+                    currentStatus = 'Non-Travailleur';
+                    applyFilters();
+                });
+                
+                allBtn.addEventListener('click', function() {
+                    allBtn.classList.add('active');
+                    workerBtn.classList.remove('active');
+                    nonWorkerBtn.classList.remove('active');
+                    currentStatus = 'Tous';
+                    applyFilters();
+                });
+                
+                // Afficher la section de visualisation
+                visualizationSection.classList.remove('hidden');
+                
+                // Appliquer les filtres initiaux
+                applyFilters();
+            }
+            
+            // Créer les statistiques
+            function createStats() {
+                statsContainer.innerHTML = '';
+                
+                // Filtrer les données par statut
+                const statusData = getStatusData();
+                
+                // Statistique 1: Nombre total d'entrées
+                const totalStat = document.createElement('div');
+                totalStat.className = 'stat-card';
+                totalStat.innerHTML = `
+                    <div class="stat-label">Total des ${currentStatus === 'Tous' ? 'personnes' : currentStatus + 's'}</div>
+                    <div class="stat-value">${statusData.length}</div>
+                `;
+                statsContainer.appendChild(totalStat);
+                
+                // Compter les formations
+                const formations = {};
+                statusData.forEach(item => {
+                    const formation = item.Formation || item.formation || 'Non spécifiée';
+                    formations[formation] = (formations[formation] || 0) + 1;
+                });
+                
+                // Trouver la formation la plus courante
+                let mostCommonFormation = 'Aucune';
+                let maxCount = 0;
+                
+                for (const formation in formations) {
+                    if (formations[formation] > maxCount) {
+                        mostCommonFormation = formation;
+                        maxCount = formations[formation];
+                    }
+                }
+                
+                const formationStat = document.createElement('div');
+                formationStat.className = 'stat-card';
+                formationStat.innerHTML = `
+                    <div class="stat-label">Formation principale</div>
+                    <div class="stat-value">${mostCommonFormation}</div>
+                    <div class="stat-label">${maxCount} personne(s)</div>
+                `;
+                statsContainer.appendChild(formationStat);
+                
+                // Compter les daaras (insensible à la casse)
+                const daaras = {};
+                statusData.forEach(item => {
+                    const daara = (item.Daara || item.daara || 'Non spécifié').toLowerCase();
+                    daaras[daara] = (daaras[daara] || 0) + 1;
+                });
+                
+                // Trouver le daara le plus courant
+                let mostCommonDaara = 'Aucun';
+                let maxDaaraCount = 0;
+                
+                for (const daara in daaras) {
+                    if (daaras[daara] > maxDaaraCount) {
+                        mostCommonDaara = daara;
+                        maxDaaraCount = daaras[daara];
+                    }
+                }
+                
+                // Formater le nom du daara (première lettre en majuscule)
+                const formattedDaara = mostCommonDaara.charAt(0).toUpperCase() + mostCommonDaara.slice(1);
+                
+                const daaraStat = document.createElement('div');
+                daaraStat.className = 'stat-card';
+                daaraStat.innerHTML = `
+                    <div class="stat-label">Daara principal</div>
+                    <div class="stat-value">${formattedDaara}</div>
+                    <div class="stat-label">${maxDaaraCount} personne(s)</div>
+                `;
+                statsContainer.appendChild(daaraStat);
+            }
+            
+            // Obtenir les données filtrées par statut
+            function getStatusData() {
+                if (currentStatus === 'Tous') {
+                    return filteredData;
+                }
+                return filteredData.filter(item => 
+                    (item.Statut || '').toLowerCase() === currentStatus.toLowerCase() || 
+                    (item.statut || '').toLowerCase() === currentStatus.toLowerCase()
+                );
+            }
+            
+            // Créer les filtres dynamiquement basés sur les en-têtes
+            function createFilters() {
+                filtersContainer.innerHTML = '';
+                
+                // Filtre pour la formation
+                const formationFilter = document.createElement('div');
+                formationFilter.className = 'filter-item';
+                
+                const formationLabel = document.createElement('label');
+                formationLabel.textContent = Filtrer par formation;
+                
+                const formationSelect = document.createElement('select');
+                formationSelect.id = filter-formation;
+                formationSelect.addEventListener('change', applyFilters);
+                
+                // Obtenir les valeurs uniques pour la formation
+                const statusData = getStatusData();
+                const uniqueFormations = [...new Set(statusData.map(item => item.Formation || item.formation))];
+                
+                // Ajouter l'option "Tous"
+                const allFormationsOption = document.createElement('option');
+                allFormationsOption.value = '';
+                allFormationsOption.textContent = 'Toutes les formations';
+                formationSelect.appendChild(allFormationsOption);
+                
+                // Ajouter les autres options
+                uniqueFormations.forEach(formation => {
+                    if (formation) { // Ignorer les valeurs vides
+                        const option = document.createElement('option');
+                        option.value = formation;
+                        option.textContent = formation;
+                        formationSelect.appendChild(option);
+                    }
+                });
+                
+                formationFilter.appendChild(formationLabel);
+                formationFilter.appendChild(formationSelect);
+                filtersContainer.appendChild(formationFilter);
+                
+                // Filtre pour le daara
+                const daaraFilter = document.createElement('div');
+                daaraFilter.className = 'filter-item';
+                
+                const daaraLabel = document.createElement('label');
+                daaraLabel.textContent = Filtrer par daara;
+                
+                const daaraSelect = document.createElement('select');
+                daaraSelect.id = filter-daara;
+                daaraSelect.addEventListener('change', applyFilters);
+                
+                // Obtenir les valeurs uniques pour le daara (insensible à la casse)
+                const uniqueDaaras = [...new Set(statusData.map(item => (item.Daara || item.daara || 'Non spécifié').toLowerCase()))];
+                
+                // Ajouter l'option "Tous"
+                const allDaarasOption = document.createElement('option');
+                allDaarasOption.value = '';
+                allDaarasOption.textContent = 'Tous les daaras';
+                daaraSelect.appendChild(allDaarasOption);
+                
+                // Ajouter les autres options
+                uniqueDaaras.forEach(daara => {
+                    if (daara) { // Ignorer les valeurs vides
+                        const option = document.createElement('option');
+                        option.value = daara;
+                        // Formater le nom du daara (première lettre en majuscule)
+                        option.textContent = daara.charAt(0).toUpperCase() + daara.slice(1);
+                        daaraSelect.appendChild(option);
+                    }
+                });
+                
+                daaraFilter.appendChild(daaraLabel);
+                daaraFilter.appendChild(daaraSelect);
+                filtersContainer.appendChild(daaraFilter);
+                
+                // Filtre pour le quartier
+                const quartierFilter = document.createElement('div');
+                quartierFilter.className = 'filter-item';
+                
+                const quartierLabel = document.createElement('label');
+                quartierLabel.textContent = Filtrer par quartier;
+                
+                const quartierSelect = document.createElement('select');
+                quartierSelect.id = filter-quartier;
+                quartierSelect.addEventListener('change', applyFilters);
+                
+                // Obtenir les valeurs uniques pour le quartier (insensible à la casse)
+                const uniqueQuartiers = [...new Set(statusData.map(item => (item.Quartier || item.quartier || 'Non spécifié').toLowerCase()))];
+                
+                // Ajouter l'option "Tous"
+                const allQuartiersOption = document.createElement('option');
+                allQuartiersOption.value = '';
+                allQuartiersOption.textContent = 'Tous les quartiers';
+                quartierSelect.appendChild(allQuartiersOption);
+                
+                // Ajouter les autres options
+                uniqueQuartiers.forEach(quartier => {
+                    if (quartier) { // Ignorer les valeurs vides
+                        const option = document.createElement('option');
+                        option.value = quartier;
+                        // Formater le nom du quartier (première lettre en majuscule)
+                        option.textContent = quartier.charAt(0).toUpperCase() + quartier.slice(1);
+                        quartierSelect.appendChild(option);
+                    }
+                });
+                
+                quartierFilter.appendChild(quartierLabel);
+                quartierFilter.appendChild(quartierSelect);
+                filtersContainer.appendChild(quartierFilter);
+                
+                // Filtre pour la profession (si le statut est Travailleur ou Tous)
+                if (currentStatus === 'Travailleur' || currentStatus === 'Tous') {
+                    const professionFilter = document.createElement('div');
+                    professionFilter.className = 'filter-item';
+                    
+                    const professionLabel = document.createElement('label');
+                    professionLabel.textContent = Filtrer par profession;
+                    
+                    const professionSelect = document.createElement('select');
+                    professionSelect.id = filter-profession;
+                    professionSelect.addEventListener('change', applyFilters);
+                    
+                    // Obtenir les valeurs uniques pour la profession
+                    const professionData = currentStatus === 'Tous' ? 
+                        filteredData.filter(item => 
+                            (item.Statut || '').toLowerCase() === 'travailleur' || 
+                            (item.statut || '').toLowerCase() === 'travailleur'
+                        ) : 
+                        statusData;
+                    
+                    const uniqueProfessions = [...new Set(professionData.map(item => item.Profession || item.profession))];
+                    
+                    // Ajouter l'option "Tous"
+                    const allProfessionsOption = document.createElement('option');
+                    allProfessionsOption.value = '';
+                    allProfessionsOption.textContent = 'Toutes les professions';
+                    professionSelect.appendChild(allProfessionsOption);
+                    
+                    // Ajouter les autres options
+                    uniqueProfessions.forEach(profession => {
+                        if (profession) { // Ignorer les valeurs vides
+                            const option = document.createElement('option');
+                            option.value = profession;
+                            option.textContent = profession;
+                            professionSelect.appendChild(option);
+                        }
+                    });
+                    
+                    professionFilter.appendChild(professionLabel);
+                    professionFilter.appendChild(professionSelect);
+                    filtersContainer.appendChild(professionFilter);
+                }
+            }
+            
+            // Appliquer la recherche
+            function applySearch() {
+                const searchTerm = searchInput.value.toLowerCase();
+                
+                if (searchTerm === '') {
+                    filteredData = [...rawData];
+                } else {
+                    filteredData = rawData.filter(item => {
+                        return Object.values(item).some(value => 
+                            value && value.toString().toLowerCase().includes(searchTerm)
+                        );
+                    });
+                }
+                
+                // Appliquer les filtres après la recherche
+                applyFilters();
+            }
+            
+            // Appliquer les filtres aux données
+            function applyFilters() {
+                let dataToFilter = [...filteredData];
+                
+                // Filtrer par statut si nécessaire
+                if (currentStatus !== 'Tous') {
+                    dataToFilter = dataToFilter.filter(item => 
+                        (item.Statut || '').toLowerCase() === currentStatus.toLowerCase() || 
+                        (item.statut || '').toLowerCase() === currentStatus.toLowerCase()
+                    );
+                }
+                
+                // Appliquer le filtre de formation
+                const formationSelect = document.getElementById('filter-formation');
+                if (formationSelect) {
+                    const selectedFormation = formationSelect.value;
+                    if (selectedFormation) {
+                        dataToFilter = dataToFilter.filter(item => 
+                            (item.Formation || item.formation) === selectedFormation
+                        );
+                    }
+                }
+                
+                // Appliquer le filtre de daara (insensible à la casse)
+                const daaraSelect = document.getElementById('filter-daara');
+                if (daaraSelect) {
+                    const selectedDaara = daaraSelect.value;
+                    if (selectedDaara) {
+                        dataToFilter = dataToFilter.filter(item => 
+                            (item.Daara || item.daara || '').toLowerCase() === selectedDaara.toLowerCase()
+                        );
+                    }
+                }
+                
+                // Appliquer le filtre de quartier (insensible à la casse)
+                const quartierSelect = document.getElementById('filter-quartier');
+                if (quartierSelect) {
+                    const selectedQuartier = quartierSelect.value;
+                    if (selectedQuartier) {
+                        dataToFilter = dataToFilter.filter(item => 
+                            (item.Quartier || item.quartier || '').toLowerCase() === selectedQuartier.toLowerCase()
+                        );
+                    }
+                }
+                
+                // Appliquer le filtre de profession
+                const professionSelect = document.getElementById('filter-profession');
+                if (professionSelect) {
+                    const selectedProfession = professionSelect.value;
+                    if (selectedProfession) {
+                        dataToFilter = dataToFilter.filter(item => 
+                            (item.Profession || item.profession) === selectedProfession
+                        );
+                    }
+                }
+                
+                // Mettre à jour les contacts
+                renderContacts(dataToFilter);
+                
+                // Mettre à jour le tableau et le graphique avec les données filtrées
+                renderDataTable(dataToFilter);
+                updateChart(dataToFilter);
+                
+                // Mettre à jour le compteur de résultats
+                resultCount.textContent = ${dataToFilter.length} résultat(s);
+                
+                // Mettre à jour les statistiques
+                createStats();
+                
+                // Mettre à jour les filtres
+                createFilters();
+            }
+            
+            // Afficher les contacts
+            function renderContacts(data = filteredData) {
+                contactContainer.innerHTML = '';
+                
+                // Filtrer par statut si nécessaire
+                const statusData = currentStatus === 'Tous' ? 
+                    data : 
+                    data.filter(item => 
+                        (item.Statut || '').toLowerCase() === currentStatus.toLowerCase() || 
+                        (item.statut || '').toLowerCase() === currentStatus.toLowerCase()
+                    );
+                
+                if (statusData.length === 0) {
+                    contactContainer.innerHTML = `
+                        <div class="contact-card" style="grid-column: 1 / -1; text-align: center;">
+                            <div class="contact-name">Aucun contact trouvé</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                statusData.forEach(person => {
+                    const contactCard = document.createElement('div');
+                    contactCard.className = 'contact-card';
+                    
+                    // Récupérer le nom et prénom des colonnes exactes du fichier
+                    const name = getColumnValue(person, ['Nom', 'nom', 'NOM']);
+                    const firstName = getColumnValue(person, ['Prenom', 'prenom', 'Prénom', 'prénom', 'PRENOM']);
+                    const fullName = ${firstName} ${name}.trim();
+                    
+                    const phone = getColumnValue(person, ['Contact', 'contact', 'Telephone', 'telephone', 'Téléphone', 'téléphone', 'Tél', 'tél', 'TELEPHONE']);
+                    const daara = getColumnValue(person, ['Daara', 'daara', 'DAARA']);
+                    const quartier = getColumnValue(person, ['Quartier', 'quartier', 'QUARTIER']);
+                    const pays = getColumnValue(person, ['Pays', 'pays', 'PAYS']);
+                    const formation = getColumnValue(person, ['Formation', 'formation', 'FORMATION']);
+                    const profession = getColumnValue(person, ['Profession', 'profession', 'PROFESSION']);
+                    
+                    contactCard.innerHTML = `
+                        <div class="contact-name">${fullName || 'Non renseigné'}</div>
+                        <div class="contact-detail">
+                            <i class="fas fa-phone"></i>
+                            <span>${phone || 'Non renseigné'}</span>
+                        </div>
+                        <div class="contact-detail">
+                            <i class="fas fa-school"></i>
+                            <span>${daara || 'Non renseigné'}</span>
+                        </div>
+                        <div class="contact-detail">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>${quartier || 'Non renseigné'}, ${pays || 'Non renseigné'}</span>
+                        </div>
+                        <div class="contact-detail">
+                            <i class="fas fa-graduation-cap"></i>
+                            <span>${formation || 'Non renseignée'}</span>
+                        </div>
+                        ${profession ? `
+                        <div class="contact-detail">
+                            <i class="fas fa-briefcase"></i>
+                            <span>${profession}</span>
+                        </div>
+                        ` : ''}
+                    `;
+                    
+                    contactContainer.appendChild(contactCard);
+                });
+            }
+            
+            // Fonction pour récupérer la valeur d'une colonne indépendamment de la casse
+            function getColumnValue(person, possibleColumnNames) {
+                for (const col of possibleColumnNames) {
+                    if (person[col] !== undefined && person[col] !== null && person[col] !== '') {
+                        return person[col];
+                    }
+                }
+                return '';
+            }
+            
+            // Afficher le tableau de données
+            function renderDataTable(data = filteredData) {
+                // Vider le tableau
+                tableHead.innerHTML = '';
+                tableBody.innerHTML = '';
+                
+                // Filtrer par statut si nécessaire
+                const statusData = currentStatus === 'Tous' ? 
+                    data : 
+                    data.filter(item => 
+                        (item.Statut || '').toLowerCase() === currentStatus.toLowerCase() || 
+                        (item.statut || '').toLowerCase() === currentStatus.toLowerCase()
+                    );
+                
+                // Créer l'en-tête du tableau
+                const headerRow = document.createElement('tr');
+                
+                // Identifier les colonnes importantes
+                const availableImportantColumns = importantColumns.filter(col => 
+                    headers.some(h => h.toLowerCase() === col.toLowerCase())
+                );
+                
+                // Identifier les autres colonnes
+                const otherColumns = headers.filter(h => 
+                    !availableImportantColumns.some(col => col.toLowerCase() === h.toLowerCase()) && 
+                    h.toLowerCase() !== 'statut'
+                );
+                
+                // Ajouter les colonnes importantes d'abord
+                availableImportantColumns.forEach(header => {
+                    const th = document.createElement('th');
+                    th.textContent = header;
+                    headerRow.appendChild(th);
+                });
+                
+                // Ajouter les autres colonnes
+                otherColumns.forEach(header => {
+                    const th = document.createElement('th');
+                    th.textContent = header;
+                    headerRow.appendChild(th);
+                });
+                
+                tableHead.appendChild(headerRow);
+                
+                // Remplir le corps du tableau
+                if (statusData.length === 0) {
+                    const tr = document.createElement('tr');
+                    const td = document.createElement('td');
+                    td.colSpan = availableImportantColumns.length + otherColumns.length;
+                    td.textContent = 'Aucune donnée correspondante trouvée';
+                    td.style.textAlign = 'center';
+                    td.style.padding = '20px';
+                    td.style.color = '#777';
+                    tr.appendChild(td);
+                    tableBody.appendChild(tr);
+                } else {
+                    statusData.forEach(row => {
+                        const tr = document.createElement('tr');
+                        
+                        // Ajouter les colonnes importantes d'abord
+                        availableImportantColumns.forEach(header => {
+                            const td = document.createElement('td');
+                            td.textContent = row[header] || '';
+                            tr.appendChild(td);
+                        });
+                        
+                        // Ajouter les autres colonnes
+                        otherColumns.forEach(header => {
+                            const td = document.createElement('td');
+                            td.textContent = row[header] || '';
+                            tr.appendChild(td);
+                        });
+                        
+                        tableBody.appendChild(tr);
+                    });
+                }
+            }
+            
+            // Mettre à jour le graphique
+            function updateChart(data = filteredData) {
+                const chartType = chartTypeSelect.value;
+                const ctx = document.getElementById('data-chart').getContext('2d');
+                
+                // Détruire le graphique existant s'il y en a un
+                if (dataChart) {
+                    dataChart.destroy();
+                }
+                
+                // Filtrer par statut si nécessaire
+                const statusData = currentStatus === 'Tous' ? 
+                    data : 
+                    data.filter(item => 
+                        (item.Statut || '').toLowerCase() === currentStatus.toLowerCase() || 
+                        (item.statut || '').toLowerCase() === currentStatus.toLowerCase()
+                    );
+                
+                // Préparer les données pour le graphique
+                if (statusData.length === 0) {
+                    return;
+                }
+                
+                let chartLabels = [];
+                let chartData = [];
+                let chartTitle = '';
+                
+                // Préparer les données en fonction du type sélectionné
+                if (currentChartDataType === 'daara') {
+                    // Graphique des daaras (insensible à la casse)
+                    const daaras = {};
+                    statusData.forEach(item => {
+                        const daara = (getColumnValue(item, ['Daara', 'daara', 'DAARA']) || 'Non spécifié').toLowerCase();
+                        daaras[daara] = (daaras[daara] || 0) + 1;
+                    });
+                    
+                    // Trier les daaras par nombre décroissant
+                    const sortedDaaras = Object.entries(daaras)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 10); // Prendre les 10 premiers
+                    
+                    chartLabels = sortedDaaras.map(daara => 
+                        daara[0].charAt(0).toUpperCase() + daara[0].slice(1)
+                    );
+                    chartData = sortedDaaras.map(daara => daara[1]);
+                    chartTitle = Répartition des ${currentStatus === 'Tous' ? 'personnes' : currentStatus + 's'} par daara;
+                    
+                } else if (currentChartDataType === 'quartier') {
+                    // Graphique des quartiers (insensible à la casse)
+                    const quartiers = {};
+                    statusData.forEach(item => {
+                        const quartier = (getColumnValue(item, ['Quartier', 'quartier', 'QUARTIER']) || 'Non spécifié').toLowerCase();
+                        quartiers[quartier] = (quartiers[quartier] || 0) + 1;
+                    });
+                    
+                    // Trier les quartiers par nombre décroissant
+                    const sortedQuartiers = Object.entries(quartiers)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 10); // Prendre les 10 premiers
+                    
+                    chartLabels = sortedQuartiers.map(quartier => 
+                        quartier[0].charAt(0).toUpperCase() + quartier[0].slice(1)
+                    );
+                    chartData = sortedQuartiers.map(quartier => quartier[1]);
+                    chartTitle = Répartition des ${currentStatus === 'Tous' ? 'personnes' : currentStatus + 's'} par quartier;
+                    
+                } else if (currentChartDataType === 'formation') {
+                    // Graphique des formations
+                    const formations = {};
+                    statusData.forEach(item => {
+                        const formation = getColumnValue(item, ['Formation', 'formation', 'FORMATION']) || 'Non spécifiée';
+                        formations[formation] = (formations[formation] || 0) + 1;
+                    });
+                    
+                    // Trier les formations par nombre décroissant
+                    const sortedFormations = Object.entries(formations)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 10); // Prendre les 10 premiers
+                    
+                    chartLabels = sortedFormations.map(formation => formation[0]);
+                    chartData = sortedFormations.map(formation => formation[1]);
+                    chartTitle = Répartition des ${currentStatus === 'Tous' ? 'personnes' : currentStatus + 's'} par formation;
+                }
+                
+                // Créer le graphique
+                dataChart = new Chart(ctx, {
+                    type: chartType,
+                    data: {
+                        labels: chartLabels,
+                        datasets: [{
+                            label: chartTitle,
+                            data: chartData,
+                            backgroundColor: getChartColors(chartType, chartData.length),
+                            borderColor: currentStatus === 'Travailleur' ? '#4cc9f0' : 
+                                        currentStatus === 'Non-Travailleur' ? '#7209b7' : '#4ade80',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: chartTitle,
+                                font: {
+                                    size: 16
+                                }
+                            },
+                            legend: {
+                                position: 'top',
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Générer des couleurs pour le graphique
+            function getChartColors(type, count) {
+                if (type === 'pie' || type === 'doughnut') {
+                    const colors = [
+                        '#4361ee', '#3a0ca3', '#7209b7', '#f72585', '#4cc9f0',
+                        '#4895ef', '#560bad', '#b5179e', '#f15bb5', '#fee440'
+                    ];
+                    return colors.slice(0, count);
+                } else {
+                    return currentStatus === 'Travailleur' ? '#4cc9f0' : 
+                           currentStatus === 'Non-Travailleur' ? '#7209b7' : '#4ade80';
+                }
+            }
+            
+            // Afficher un message d'erreur
+            function showError(message) {
+                errorMessageElement.textContent = message;
+                errorMessageElement.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
