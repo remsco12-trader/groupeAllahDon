@@ -1,93 +1,15 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Annuaire Contacts</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: #f9f9f9;
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        #filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 20px;
-            justify-content: center;
-        }
-        #filters label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        #filters select, #search {
-            padding: 8px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        #search {
-            width: 250px;
-        }
-        #contact-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 15px;
-        }
-        .contact-card {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .contact-card h3 {
-            margin: 0 0 10px;
-            font-size: 1.2em;
-            color: #2c3e50;
-        }
-        .contact-card p {
-            margin: 5px 0;
-            font-size: 0.9em;
-        }
-        .contact-card a {
-            color: #3498db;
-            text-decoration: none;
-        }
-        .contact-card a:hover {
-            text-decoration: underline;
-        }
-        #pagination {
-            display: flex;
-            justify-content: center;
-            margin-top: 20px;
-            gap: 5px;
-        }
-        #pagination button {
-            padding: 5px 10px;
-            border: none;
-            background: #3498db;
-            color: white;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        #pagination button.active {
-            background: #2c3e50;
-        }
-        #result-count {
-            text-align: center;
-            margin-bottom: 15px;
-            font-weight: bold;
-        }
-    </style>
-</head>
 <body>
-    <h1>Annuaire des Contacts</h1>
+    <h1>Annuaire de Bégué Baara</h1>
+
+    <!-- Filtre statut en premier -->
+    <div style="text-align:center; margin-bottom:20px;">
+        <label for="filter-statut"><strong>Filtrer par statut:</strong></label>
+        <select id="filter-statut">
+            <option value="">Tous</option>
+            <option value="Travailleur">Travailleur</option>
+            <option value="Non travailleur">Non travailleur</option>
+        </select>
+    </div>
 
     <div id="filters"></div>
     <div style="text-align:center; margin-bottom:20px;">
@@ -154,6 +76,7 @@
         }
 
         function applyFilters() {
+            const statut = document.getElementById("filter-statut").value;
             const formation = document.getElementById("filter-formation").value;
             const daara = document.getElementById("filter-daara").value;
             const quartier = document.getElementById("filter-quartier").value;
@@ -161,7 +84,8 @@
             const searchTerm = document.getElementById("search").value.toLowerCase();
 
             filteredContacts = allContacts.filter(contact => {
-                return (!formation || contact.Formation === formation) &&
+                return (!statut || contact.Statut === statut) &&
+                       (!formation || contact.Formation === formation) &&
                        (!daara || contact.Daara === daara) &&
                        (!quartier || contact.Quartier === quartier) &&
                        (!profession || contact.Profession === profession) &&
@@ -204,6 +128,7 @@
                     <p><strong>Quartier:</strong> ${contact.Quartier || "N/A"}</p>
                     <p><strong>Formation:</strong> ${contact.Formation || "N/A"}</p>
                     <p><strong>Daara:</strong> ${contact.Daara || "N/A"}</p>
+                    <p><strong>Statut:</strong> ${contact.Statut || "N/A"}</p>
                 `;
                 contactList.appendChild(div);
             });
@@ -220,7 +145,9 @@
             }
         }
 
+        // Recherche en temps réel
         document.getElementById("search").addEventListener("input", applyFilters);
+        // Filtre statut en temps réel
+        document.getElementById("filter-statut").addEventListener("change", applyFilters);
     </script>
 </body>
-</html>
