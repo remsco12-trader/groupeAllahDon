@@ -1,153 +1,167 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Annuaire</title>
+  <style>
+    /* ==== STYLE GLOBAL ==== */
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #f0f8ff, #e6eaf8);
+    }
+
+    h1 {
+      text-align: center;
+      color: #1e3a8a;
+      margin: 20px 0;
+    }
+
+    /* ==== BARRE DE FILTRES ==== */
+    #filters {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    #filters button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 20px;
+      background: #3b82f6;
+      color: white;
+      cursor: pointer;
+      transition: 0.2s;
+      font-size: 14px;
+    }
+    #filters button:hover {
+      background: #2563eb;
+    }
+
+    /* ==== LISTE DES CONTACTS ==== */
+    #contacts {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .contact-card {
+      background: white;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+    .contact-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .contact-card h3 {
+      margin: 0;
+      color: #1e40af;
+    }
+
+    .contact-card p {
+      margin: 6px 0;
+      font-size: 14px;
+      color: #374151;
+    }
+
+    .contact-card a {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: bold;
+    }
+  </style>
+</head>
 <body>
-    <h1>Annuaire de Bégué Baara</h1>
+  <h1>Annuaire des contacts</h1>
 
-    <!-- Filtre statut en premier -->
-    <div style="text-align:center; margin-bottom:20px;">
-        <label for="filter-statut"><strong>Filtrer par statut:</strong></label>
-        <select id="filter-statut">
-            <option value="">Tous</option>
-            <option value="Travailleur">Travailleur</option>
-            <option value="Non travailleur">Non travailleur</option>
-        </select>
+  <!-- Barre de filtres -->
+  <div id="filters">
+    <button onclick="filterContacts('Tous')">Tous</button>
+    <button onclick="filterContacts('Travailleur')">Travailleurs</button>
+    <button onclick="filterContacts('Non travailleur')">Non travailleurs</button>
+  </div>
+
+  <!-- Liste de contacts -->
+  <div id="contacts">
+    <!-- Exemple fictif pour test visuel -->
+    <div class="contact-card" data-statut="Travailleur">
+      <h3>Jean Dupont</h3>
+      <p><strong>Téléphone :</strong> <a href="tel:+33123456789">+33 1 23 45 67 89</a></p>
+      <p><strong>Profession :</strong> Enseignant</p>
+      <p><strong>Quartier :</strong> Bamako-Coura</p>
+      <p><strong>Statut :</strong> Travailleur</p>
     </div>
-
-    <div id="filters"></div>
-    <div style="text-align:center; margin-bottom:20px;">
-        <input type="text" id="search" placeholder="Rechercher par nom, prénom, profession, téléphone...">
+    <div class="contact-card" data-statut="Non travailleur">
+      <h3>Fatoumata Koné</h3>
+      <p><strong>Téléphone :</strong> <a href="tel:+22398765432">+223 98 76 54 32</a></p>
+      <p><strong>Profession :</strong> Étudiante</p>
+      <p><strong>Quartier :</strong> ACI 2000</p>
+      <p><strong>Statut :</strong> Non travailleur</p>
     </div>
-    <div id="result-count"></div>
-    <div id="contact-list"></div>
-    <div id="pagination"></div>
+  </div>
 
-    <!-- PapaParse pour lire le CSV Google Sheets -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script>
+    // Fonction de filtrage
+    function filterContacts(statut) {
+      const cards = document.querySelectorAll('.contact-card');
+      cards.forEach(card => {
+        if (statut === 'Tous' || card.getAttribute('data-statut') === statut) {
+          card.style.display = "block";
+        } else {
+          card.style.display = "none";
+        }
+      });
+    }
 
-    <script>
-        // Charger et traiter les données Google Sheets
-        const sheetUrl = "https://docs.google.com/spreadsheets/d/1lQVgkO9AQ3l73MncVuSmIe4UO2LGAmWBXIAARTonQKY/gviz/tq?tqx=out:csv&sheet=liste";
-        let allContacts = [];
-        let filteredContacts = [];
-        let currentPage = 1;
-        const itemsPerPage = 20;
+    // === LECTURE GOOGLE SHEET ===
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/1lQVgkO9AQ3l73MncVuSmIe4UO2LGAmWBXIAARTonQKY/gviz/tq?tqx=out:csv&sheet=liste";
 
-        Papa.parse(sheetUrl, {
-            download: true,
-            header: true,
-            complete: function (results) {
-                allContacts = results.data;
-                filteredContacts = allContacts;
-                createFilters(allContacts);
-                renderContacts();
-            }
+    async function fetchData() {
+      try {
+        const res = await fetch(sheetUrl);
+        const text = await res.text();
+
+        const rows = text.split("\n").map(r => r.split(","));
+        const headers = rows[0];
+        const data = rows.slice(1);
+
+        const contactsDiv = document.getElementById("contacts");
+        contactsDiv.innerHTML = ""; // Efface les données fictives
+
+        data.forEach(row => {
+          if (row.length < 7) return;
+
+          const contact = {};
+          headers.forEach((h, i) => contact[h.trim()] = row[i]?.trim());
+
+          const card = document.createElement("div");
+          card.className = "contact-card";
+          card.setAttribute("data-statut", contact["Statut"] || "Inconnu");
+
+          card.innerHTML = `
+            <h3>${contact["Nom"] || ""} ${contact["Prénom"] || ""}</h3>
+            <p><strong>Téléphone :</strong> <a href="tel:${contact["Téléphone"] || ""}">${contact["Téléphone"] || ""}</a></p>
+            <p><strong>Profession :</strong> ${contact["Profession"] || ""}</p>
+            <p><strong>Quartier :</strong> ${contact["Quartier"] || ""}</p>
+            <p><strong>Formation :</strong> ${contact["Formation"] || ""}</p>
+            <p><strong>Daara :</strong> ${contact["Daara"] || ""}</p>
+            <p><strong>Statut :</strong> ${contact["Statut"] || ""}</p>
+          `;
+          contactsDiv.appendChild(card);
         });
 
-        function createFilters(data) {
-            const filters = [
-                { id: "filter-formation", label: "Filtrer par formation", key: "Formation" },
-                { id: "filter-daara", label: "Filtrer par daara", key: "Daara" },
-                { id: "filter-quartier", label: "Filtrer par quartier", key: "Quartier" },
-                { id: "filter-profession", label: "Filtrer par profession", key: "Profession" }
-            ];
+      } catch (e) {
+        console.error("Erreur Google Sheet :", e);
+      }
+    }
 
-            const filterContainer = document.getElementById("filters");
-            filters.forEach(filter => {
-                const wrapper = document.createElement("div");
-                const label = document.createElement("label");
-                label.textContent = filter.label;
-
-                const select = document.createElement("select");
-                select.id = filter.id;
-                select.innerHTML = '<option value="">Tous</option>';
-
-                const uniqueValues = [...new Set(data.map(item => item[filter.key]).filter(Boolean))];
-                uniqueValues.forEach(value => {
-                    const option = document.createElement("option");
-                    option.value = value;
-                    option.textContent = value;
-                    select.appendChild(option);
-                });
-
-                select.addEventListener("change", applyFilters);
-
-                wrapper.appendChild(label);
-                wrapper.appendChild(select);
-                filterContainer.appendChild(wrapper);
-            });
-        }
-
-        function applyFilters() {
-            const statut = document.getElementById("filter-statut").value;
-            const formation = document.getElementById("filter-formation").value;
-            const daara = document.getElementById("filter-daara").value;
-            const quartier = document.getElementById("filter-quartier").value;
-            const profession = document.getElementById("filter-profession").value;
-            const searchTerm = document.getElementById("search").value.toLowerCase();
-
-            filteredContacts = allContacts.filter(contact => {
-                return (!statut || contact.Statut === statut) &&
-                       (!formation || contact.Formation === formation) &&
-                       (!daara || contact.Daara === daara) &&
-                       (!quartier || contact.Quartier === quartier) &&
-                       (!profession || contact.Profession === profession) &&
-                       (contact.Nom?.toLowerCase().includes(searchTerm) ||
-                        contact["Prénom"]?.toLowerCase().includes(searchTerm) ||
-                        contact.Profession?.toLowerCase().includes(searchTerm) ||
-                        contact.Téléphone?.includes(searchTerm));
-            });
-
-            currentPage = 1;
-            renderContacts();
-        }
-
-        function renderContacts() {
-            const contactList = document.getElementById("contact-list");
-            const resultCount = document.getElementById("result-count");
-            const pagination = document.getElementById("pagination");
-            contactList.innerHTML = "";
-            pagination.innerHTML = "";
-
-            const totalPages = Math.ceil(filteredContacts.length / itemsPerPage);
-            const start = (currentPage - 1) * itemsPerPage;
-            const end = start + itemsPerPage;
-            const contactsToShow = filteredContacts.slice(start, end);
-
-            resultCount.textContent = `${filteredContacts.length} résultat(s)`;
-
-            contactsToShow.forEach(contact => {
-                const div = document.createElement("div");
-                div.classList.add("contact-card");
-
-                const name = contact.Nom || "";
-                const firstName = contact["Prénom"] || "";
-                const fullName = `${firstName} ${name}`.trim();
-
-                div.innerHTML = `
-                    <h3>${fullName}</h3>
-                    <p><strong>Téléphone:</strong> <a href="tel:${contact.Téléphone}">${contact.Téléphone}</a></p>
-                    <p><strong>Profession:</strong> ${contact.Profession || "N/A"}</p>
-                    <p><strong>Quartier:</strong> ${contact.Quartier || "N/A"}</p>
-                    <p><strong>Formation:</strong> ${contact.Formation || "N/A"}</p>
-                    <p><strong>Daara:</strong> ${contact.Daara || "N/A"}</p>
-                    <p><strong>Statut:</strong> ${contact.Statut || "N/A"}</p>
-                `;
-                contactList.appendChild(div);
-            });
-
-            for (let i = 1; i <= totalPages; i++) {
-                const button = document.createElement("button");
-                button.textContent = i;
-                if (i === currentPage) button.classList.add("active");
-                button.addEventListener("click", () => {
-                    currentPage = i;
-                    renderContacts();
-                });
-                pagination.appendChild(button);
-            }
-        }
-
-        // Recherche en temps réel
-        document.getElementById("search").addEventListener("input", applyFilters);
-        // Filtre statut en temps réel
-        document.getElementById("filter-statut").addEventListener("change", applyFilters);
-    </script>
+    fetchData();
+  </script>
 </body>
+</html>
