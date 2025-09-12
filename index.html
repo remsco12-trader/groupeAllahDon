@@ -19,7 +19,6 @@
       padding: 15px;
       color: white;
       text-align: center;
-      position: relative;
     }
     header img {
       max-width: 100px;
@@ -30,7 +29,7 @@
       font-size: 22px;
     }
 
-    /* ==== BARRE DE FILTRES ==== */
+    /* ==== FILTRES ==== */
     #filters {
       display: flex;
       justify-content: center;
@@ -52,7 +51,7 @@
       background: #2563eb;
     }
 
-    /* ==== LISTE DES CONTACTS ==== */
+    /* ==== CONTACTS ==== */
     #contacts {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -89,7 +88,7 @@
   </style>
 </head>
 <body>
-  <!-- ==== ENTÊTE ==== -->
+  <!-- ==== HEADER ==== -->
   <header>
     <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/Example.jpg/200px-Example.jpg" alt="Logo" />
     <h1>Annuaire des Contacts</h1>
@@ -102,27 +101,9 @@
     <button onclick="filterContacts('Non travailleur')">Non travailleurs</button>
   </div>
 
-  <!-- ==== LISTE DE CONTACTS ==== -->
+  <!-- ==== CONTACTS ==== -->
   <div id="contacts">
-    <!-- Exemple fictif pour test -->
-    <div class="contact-card" data-statut="Travailleur">
-      <h3>Jean Dupont</h3>
-      <p><i class="fa fa-phone"></i><a href="tel:+33123456789">+33 1 23 45 67 89</a></p>
-      <p><i class="fa fa-briefcase"></i> Enseignant</p>
-      <p><i class="fa fa-map-marker-alt"></i> Bamako-Coura</p>
-      <p><i class="fa fa-graduation-cap"></i> Licence</p>
-      <p><i class="fa fa-flag"></i> Mali</p>
-      <p><strong>Statut :</strong> Travailleur</p>
-    </div>
-    <div class="contact-card" data-statut="Non travailleur">
-      <h3>Fatoumata Koné</h3>
-      <p><i class="fa fa-phone"></i><a href="tel:+22398765432">+223 98 76 54 32</a></p>
-      <p><i class="fa fa-briefcase"></i> Étudiante</p>
-      <p><i class="fa fa-map-marker-alt"></i> ACI 2000</p>
-      <p><i class="fa fa-graduation-cap"></i> Master</p>
-      <p><i class="fa fa-flag"></i> Mali</p>
-      <p><strong>Statut :</strong> Non travailleur</p>
-    </div>
+    <p>Chargement des données...</p>
   </div>
 
   <script>
@@ -138,8 +119,8 @@
       });
     }
 
-    // === REMPLACER DONNÉES PAR GOOGLE SHEET ===
-    const sheetUrl = "https://docs.google.com/spreadsheets/d/1lQVgkO9AQ3l73MncVuSmIe4UO2LGAmWBXIAARTonQKY/gviz/tq?tqx=out:csv&sheet=liste";
+    // === GOOGLE SHEET ===
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/1lQVgO9AQ3l73MncVuSmIe4UO2LGAmWBXIAARTonQKY/gviz/tq?tqx=out:csv&sheet=liste";
 
     async function fetchData() {
       try {
@@ -154,7 +135,7 @@
         contactsDiv.innerHTML = "";
 
         data.forEach(row => {
-          if (row.length < 7) return;
+          if (row.length < 5) return;
 
           const contact = {};
           headers.forEach((h, i) => contact[h.trim()] = row[i]?.trim());
@@ -164,17 +145,22 @@
           card.setAttribute("data-statut", contact["Statut"] || "Inconnu");
 
           card.innerHTML = `
-            <h3>${contact["Nom"] || ""} ${contact["Prénom"] || ""}</h3>
-            <p><i class="fa fa-phone"></i><a href="tel:${contact["Téléphone"] || ""}">${contact["Téléphone"] || ""}</a></p>
+            <h3>${contact["Nom et prénoms"] || ""}</h3>
+            <p><i class="fa fa-phone"></i><a href="tel:${contact["Contact"] || ""}">${contact["Contact"] || ""}</a></p>
             <p><i class="fa fa-briefcase"></i> ${contact["Profession"] || ""}</p>
+            <p><i class="fa fa-industry"></i> ${contact["Entreprise"] || ""}</p>
             <p><i class="fa fa-map-marker-alt"></i> ${contact["Quartier"] || ""}</p>
             <p><i class="fa fa-graduation-cap"></i> ${contact["Formation"] || ""}</p>
+            <p><i class="fa fa-book"></i> ${contact["Daara"] || ""}</p>
             <p><i class="fa fa-flag"></i> ${contact["Pays"] || ""}</p>
+            <p><i class="fa fa-location-dot"></i> ${contact["Région"] || ""}</p>
             <p><strong>Statut :</strong> ${contact["Statut"] || ""}</p>
           `;
           contactsDiv.appendChild(card);
         });
+
       } catch (e) {
+        document.getElementById("contacts").innerHTML = "<p style='color:red;'>Erreur lors du chargement des données.</p>";
         console.error("Erreur Google Sheet :", e);
       }
     }
