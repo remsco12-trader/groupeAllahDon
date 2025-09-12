@@ -3,169 +3,138 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Visualisation Travailleurs</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>Visualisation Travailleurs / Non-Travailleurs</title>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-    body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f5f5f5; }
-    header { background: #4361ee; color:white; padding:20px; text-align:center; }
-    header img { max-height: 80px; display:block; margin:0 auto 10px; }
-    h1 { margin:0; font-size:24px; }
-    .container { max-width:1200px; margin:20px auto; padding:0 20px; }
-    .status-selector { margin:20px 0; text-align:center; }
-    .status-btn { padding:10px 20px; margin:0 5px; border:none; border-radius:5px; cursor:pointer; color:white; }
-    .worker-btn { background:#4cc9f0; }
-    .non-worker-btn { background:#7209b7; }
-    .all-btn { background:#4ade80; }
+    body { font-family: Arial, sans-serif; background: #f5f7fb; margin:0; }
+    header { background:#4361ee; color:white; padding:20px; text-align:center; }
+    header img { max-height:80px; display:block; margin:0 auto 10px; }
+    h1 { margin-bottom:5px; }
+    .status-btns { display:flex; justify-content:center; margin:20px 0; gap:10px; }
+    .status-btn { padding:10px 20px; border:none; border-radius:5px; cursor:pointer; color:white; font-weight:bold; }
+    .worker-btn { background:#4cc9f0; } .non-worker-btn { background:#7209b7; } .all-btn { background:#4ade80; }
     .status-btn.active { box-shadow:0 0 0 3px rgba(0,0,0,0.2); }
-    .contact-card { background:white; padding:15px; margin:10px 0; border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
-    .contact-name { font-weight:bold; font-size:16px; margin-bottom:5px; }
-    .contact-detail { margin:3px 0; display:flex; align-items:center; }
-    .contact-detail i { margin-right:8px; width:20px; }
-    table { width:100%; border-collapse: collapse; margin-top:20px; background:white; border-radius:5px; overflow:hidden; }
-    th, td { padding:8px; border-bottom:1px solid #ddd; text-align:left; }
+    .container { max-width:1200px; margin:0 auto; padding:10px; }
+    table { width:100%; border-collapse:collapse; margin-top:20px; }
+    th, td { border:1px solid #ddd; padding:8px; text-align:left; }
     th { background:#4361ee; color:white; position:sticky; top:0; }
-    .loading { text-align:center; padding:50px; font-size:18px; }
-    .error { background:#ffebee; color:#c62828; padding:10px; border-radius:5px; margin:10px 0; text-align:center; }
+    .contact-card { background:white; border-radius:5px; padding:10px; margin:10px 0; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+    .contact-detail i { width:20px; color:#4361ee; }
 </style>
 </head>
 <body>
+
 <header>
     <img src="https://via.placeholder.com/150x80?text=Logo" alt="Logo">
-    <h1>Visualisation Travailleurs et Non-Travailleurs</h1>
+    <h1>Visualisation Travailleurs / Non-Travailleurs</h1>
 </header>
+
+<div class="status-btns">
+    <button class="status-btn worker-btn active" id="worker-btn">Travailleurs</button>
+    <button class="status-btn non-worker-btn" id="non-worker-btn">Non-Travailleurs</button>
+    <button class="status-btn all-btn" id="all-btn">Tous</button>
+</div>
+
 <div class="container">
-    <div id="loading" class="loading">Chargement des données...</div>
-    <div id="error" class="error" style="display:none;"></div>
-
-    <div class="status-selector" id="status-section" style="display:none;">
-        <button class="status-btn worker-btn active" id="worker-btn">Travailleurs</button>
-        <button class="status-btn non-worker-btn" id="non-worker-btn">Non-Travailleurs</button>
-        <button class="status-btn all-btn" id="all-btn">Tous</button>
-    </div>
-
     <div id="contacts"></div>
-
-    <table id="data-table" style="display:none;">
-        <thead>
-            <tr>
-                <th>Statut</th>
-                <th>Nom et prénoms</th>
-                <th>Profession</th>
-                <th>Entreprise</th>
-                <th>Formation</th>
-                <th>Contact</th>
-                <th>Quartier</th>
-                <th>Daara</th>
-                <th>Pays</th>
-                <th>Région</th>
-            </tr>
-        </thead>
-        <tbody id="table-body"></tbody>
+    <table id="data-table">
+        <thead></thead>
+        <tbody></tbody>
     </table>
 </div>
 
 <script>
-// URL Google Sheet publique en CSV
-const sheetUrl = "https://docs.google.com/spreadsheets/d/1lQVgkO9AQ3l73MncVuSmIe4UO2LGAmWBXIAARTonQKY/gviz/tq?tqx=out:csv&sheet=liste";
+const sheetUrl = "https://docs.google.com/spreadsheets/d/TON_ID/gviz/tq?tqx=out:csv&sheet=NomDeTaFeuille"; // <-- remplacer
 
 let rawData = [];
-let currentStatus = 'Travailleur';
+let currentStatus = "Travailleur";
 
-document.getElementById('worker-btn').addEventListener('click', () => setStatus('Travailleur'));
-document.getElementById('non-worker-btn').addEventListener('click', () => setStatus('Non-Travailleur'));
-document.getElementById('all-btn').addEventListener('click', () => setStatus('Tous'));
+const workerBtn = document.getElementById("worker-btn");
+const nonWorkerBtn = document.getElementById("non-worker-btn");
+const allBtn = document.getElementById("all-btn");
 
-function setStatus(status) {
-    currentStatus = status;
-    document.getElementById('worker-btn').classList.toggle('active', status==='Travailleur');
-    document.getElementById('non-worker-btn').classList.toggle('active', status==='Non-Travailleur');
-    document.getElementById('all-btn').classList.toggle('active', status==='Tous');
-    render();
+workerBtn.addEventListener('click', ()=>{currentStatus="Travailleur"; setActiveBtn(workerBtn); render();});
+nonWorkerBtn.addEventListener('click', ()=>{currentStatus="Non-Travailleur"; setActiveBtn(nonWorkerBtn); render();});
+allBtn.addEventListener('click', ()=>{currentStatus="Tous"; setActiveBtn(allBtn); render();});
+
+function setActiveBtn(btn){
+    [workerBtn, nonWorkerBtn, allBtn].forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
 }
 
-// Parser CSV simple compatible guillemets
-function parseCSV(text) {
-    const lines = text.split("\n");
-    const result = [];
-    const headers = lines[0].split(",");
-    for(let i=1;i<lines.length;i++){
-        let obj = {};
-        let row = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-        if(!row) continue;
-        headers.forEach((h,j)=>obj[h.trim()]=row[j]?row[j].replace(/^"|"$/g,'').trim():'');
-        result.push(obj);
-    }
-    return result;
+function loadData(){
+    Papa.parse(sheetUrl, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results){
+            rawData = results.data;
+            console.log("Données chargées:", rawData); // <-- Vérifier ici
+            render();
+        },
+        error: function(err){
+            alert("Erreur chargement: "+err.message);
+        }
+    });
 }
 
-// Charger les données
-fetch(sheetUrl)
-    .then(resp=>resp.text())
-    .then(text=>{
-        rawData = parseCSV(text);
-        document.getElementById('loading').style.display='none';
-        document.getElementById('status-section').style.display='block';
-        render();
-    })
-    .catch(err=>{
-        document.getElementById('loading').style.display='none';
-        const e = document.getElementById('error');
-        e.textContent = "Erreur de chargement : " + err;
-        e.style.display='block';
-    });
+function render(){
+    const contactsDiv = document.getElementById("contacts");
+    const table = document.getElementById("data-table");
+    const thead = table.querySelector("thead");
+    const tbody = table.querySelector("tbody");
 
-function render() {
-    const container = document.getElementById('contacts');
-    const tbody = document.getElementById('table-body');
-    const table = document.getElementById('data-table');
-    container.innerHTML='';
-    tbody.innerHTML='';
-    const filtered = rawData.filter(r=>{
-        if(currentStatus==='Tous') return true;
-        return (r.Statut||'').toLowerCase()===currentStatus.toLowerCase();
-    });
-
-    if(filtered.length===0){
-        container.innerHTML='<p>Aucune donnée correspondante</p>';
-        table.style.display='none';
-        return;
+    // Filtrer selon le statut
+    let filtered = rawData;
+    if(currentStatus !== "Tous"){
+        filtered = rawData.filter(r => (r.Statut||"").toLowerCase() === currentStatus.toLowerCase());
     }
-    table.style.display='table';
-    filtered.forEach(p=>{
-        const card = document.createElement('div');
-        card.className='contact-card';
-        const name = p['Nom et prénoms'] || '';
-        const profession = p.Profession || '';
-        const entreprise = p.Entreprise || '';
-        const formation = p.Formation || '';
-        const contact = p.Contact || '';
-        const quartier = p.Quartier || '';
-        const daara = p.Daara || '';
-        const pays = p.Pays || '';
-        const region = p.Région || '';
-        card.innerHTML=`
-            <div class="contact-name">${name}</div>
-            <div class="contact-detail"><i class="fas fa-briefcase"></i>${profession}</div>
-            <div class="contact-detail"><i class="fas fa-building"></i>${entreprise}</div>
-            <div class="contact-detail"><i class="fas fa-graduation-cap"></i>${formation}</div>
-            <div class="contact-detail"><i class="fas fa-phone"></i>${contact}</div>
-            <div class="contact-detail"><i class="fas fa-map-marker-alt"></i>${quartier}</div>
-            <div class="contact-detail"><i class="fas fa-school"></i>${daara}</div>
-            <div class="contact-detail"><i class="fas fa-flag"></i>${pays}</div>
-            <div class="contact-detail"><i class="fas fa-globe"></i>${region}</div>
+
+    // Rendu des contacts
+    contactsDiv.innerHTML = "";
+    filtered.forEach(person=>{
+        const card = document.createElement("div");
+        card.className="contact-card";
+        card.innerHTML = `
+            <div><strong>${person["Nom et prénoms"]||""}</strong></div>
+            <div class="contact-detail"><i class="fas fa-phone"></i> ${person.Contact||""}</div>
+            <div class="contact-detail"><i class="fas fa-briefcase"></i> ${person.Profession||""}</div>
+            <div class="contact-detail"><i class="fas fa-building"></i> ${person.Entreprise||""}</div>
+            <div class="contact-detail"><i class="fas fa-school"></i> ${person.Formation||""}</div>
+            <div class="contact-detail"><i class="fas fa-map-marker-alt"></i> ${person.Quartier||""}, ${person.Pays||""}</div>
+            <div class="contact-detail"><i class="fas fa-globe"></i> ${person.Région||""}</div>
         `;
-        container.appendChild(card);
-
-        const tr = document.createElement('tr');
-        ['Statut','Nom et prénoms','Profession','Entreprise','Formation','Contact','Quartier','Daara','Pays','Région'].forEach(k=>{
-            const td = document.createElement('td');
-            td.textContent = p[k] || '';
-            tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
+        contactsDiv.appendChild(card);
     });
+
+    // Rendu du tableau
+    thead.innerHTML = "";
+    tbody.innerHTML = "";
+    if(rawData.length>0){
+        const headers = Object.keys(rawData[0]);
+        const trHead = document.createElement("tr");
+        headers.forEach(h=>{
+            const th = document.createElement("th");
+            th.textContent = h;
+            trHead.appendChild(th);
+        });
+        thead.appendChild(trHead);
+
+        filtered.forEach(row=>{
+            const tr = document.createElement("tr");
+            headers.forEach(h=>{
+                const td = document.createElement("td");
+                td.textContent = row[h] || "";
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        });
+    }
 }
+
+// Charger les données au démarrage
+loadData();
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 </body>
 </html>
