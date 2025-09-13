@@ -9,8 +9,7 @@
 <style>
     body { font-family: Arial, sans-serif; background: #f5f7fb; margin:0; }
     header { background:#4361ee; color:white; padding:20px; text-align:center; }
-    header img { max-height:80px; display:block; margin:0 auto 10px; }
-    h1 { margin-bottom:5px; }
+    h1 { margin:0; }
     .filter-bar { text-align:center; margin:20px 0; }
     select, input { padding:8px; border:1px solid #ccc; border-radius:5px; }
     select { margin-right:10px; }
@@ -35,12 +34,16 @@
 </head>
 <body>
 
+<!-- Image au-dessus du header -->
+<div style="text-align:center; margin-top:10px;">
+    <img src="https://i.imgur.com/zh9XOmf.jpeg" alt="Logo" style="max-height:80px;">
+</div>
+
 <header>
-    <img src="https://i.imgur.com/zh9XOmf.jpeg" alt="Logo" style="max-height:80px; display:block; margin:0 auto 10px;">
     <h1>Annuaire de Begué Baara</h1>
 </header>
 
-<!-- 🔎 Liste déroulante + recherche -->
+<!-- Filtre déroulant + recherche -->
 <div class="filter-bar">
     <select id="status-select">
         <option value="Travailleur">Travailleurs</option>
@@ -133,18 +136,15 @@ function render(){
             <div class="contact-detail"><i class="fas fa-globe"></i> ${person.Région||""}</div>
         `;
         contactsDiv.appendChild(card);
-
-        // Trigger fade-in
         setTimeout(()=>{ card.classList.add("visible"); }, 50);
     });
 
     // --- TABLEAU ---
     thead.innerHTML = "";
     tbody.innerHTML = "";
-    table.style.opacity = 0; // reset fade-in
+    table.style.opacity = 0; 
     if(rawData.length>0){
         let headers = Object.keys(rawData[0]);
-
         headers = headers.filter(h => h !== "Horodateur" && h !== "Statut");
 
         if(currentStatus === "Travailleur"){
@@ -171,7 +171,6 @@ function render(){
             tbody.appendChild(tr);
         });
 
-        // Appliquer fade-in du tableau
         setTimeout(()=>{ table.style.opacity = 1; }, 50);
     }
 }
@@ -181,8 +180,3 @@ loadData();
 </script>
 </body>
 </html>
-
-
-
-
-
