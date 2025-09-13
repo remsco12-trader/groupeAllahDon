@@ -13,13 +13,22 @@
     h1 { margin-bottom:5px; }
     .status-btns { display:flex; justify-content:center; margin:20px 0; gap:10px; }
     .status-btn { padding:10px 20px; border:none; border-radius:5px; cursor:pointer; color:white; font-weight:bold; }
-    .worker-btn { background:#4cc9f0; } .non-worker-btn { background:#7209b7; } .all-btn { background:#4ade80; }
+    .worker-btn { background:#4cc9f0; } 
+    .non-worker-btn { background:#7209b7; } 
+    .all-btn { background:#4ade80; }
     .status-btn.active { box-shadow:0 0 0 3px rgba(0,0,0,0.2); }
     .container { max-width:1200px; margin:0 auto; padding:10px; }
     table { width:100%; border-collapse:collapse; margin-top:20px; }
     th, td { border:1px solid #ddd; padding:8px; text-align:left; }
     th { background:#4361ee; color:white; position:sticky; top:0; }
-    .contact-card { background:white; border-radius:5px; padding:10px; margin:10px 0; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+    .contact-card { 
+        background:white; 
+        border-radius:5px; 
+        padding:12px; 
+        margin:15px 0;  /* ✅ plus d’espace entre les cartes */
+        box-shadow:0 2px 5px rgba(0,0,0,0.1); 
+    }
+    .contact-detail { margin: 4px 0; } /* ✅ un peu d’espace entre les lignes */
     .contact-detail i { width:20px; color:#4361ee; }
 </style>
 </head>
@@ -36,6 +45,12 @@
     <button class="status-btn all-btn" id="all-btn">Tous</button>
 </div>
 
+<!-- 🔎 Barre de recherche -->
+<div style="text-align:center; margin: 10px 0 20px 0;">
+    <input type="text" id="search-input" placeholder="Rechercher un nom, une entreprise..." 
+           style="padding:8px; width:60%; border:1px solid #ccc; border-radius:5px;">
+</div>
+
 <div class="container">
     <div id="contacts"></div>
     <table id="data-table">
@@ -45,7 +60,7 @@
 </div>
 
 <script>
-const sheetUrl = "https://docs.google.com/spreadsheets/d/1lQVgkO9AQ3l73MncVuSmIe4UO2LGAmWBXIAARTonQKY/gviz/tq?tqx=out:csv&gid=1936138638"; // <-- remplacer
+const sheetUrl = "https://docs.google.com/spreadsheets/d/1lQVgkO9AQ3l73MncVuSmIe4UO2LGAmWBXIAARTonQKY/gviz/tq?tqx=out:csv&gid=1936138638";
 
 let rawData = [];
 let currentStatus = "Travailleur";
@@ -53,15 +68,48 @@ let currentStatus = "Travailleur";
 const workerBtn = document.getElementById("worker-btn");
 const nonWorkerBtn = document.getElementById("non-worker-btn");
 const allBtn = document.getElementById("all-btn");
+const searchInput = document.getElementById("search-input");
 
-workerBtn.addEventListener('click', ()=>{currentStatus="Travailleur"; setActiveBtn(workerBtn); render();});
-nonWorkerBtn.addEventListener('click', ()=>{currentStatus="Non Travailleur"; setActiveBtn(nonWorkerBtn); render();});
-allBtn.addEventListener('click', ()=>{currentStatus="Tous"; setActiveBtn(allBtn); render();});
+// ✅ gestion des boutons
+workerBtn.addEventListener('click', ()=>{
+    currentStatus="Travailleur"; 
+    setActiveBtn(workerBtn); 
+    hideOtherButtons(workerBtn);
+    render();
+});
+nonWorkerBtn.addEventListener('click', ()=>{
+    currentStatus="Non Travailleur"; 
+    setActiveBtn(nonWorkerBtn); 
+    hideOtherButtons(nonWorkerBtn);
+    render();
+});
+allBtn.addEventListener('click', ()=>{
+    currentStatus="Tous"; 
+    setActiveBtn(allBtn); 
+    hideOtherButtons(allBtn);
+    render();
+});
 
 function setActiveBtn(btn){
     [workerBtn, nonWorkerBtn, allBtn].forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
 }
+
+// ✅ masquer les autres boutons
+function hideOtherButtons(activeBtn){
+    [workerBtn, nonWorkerBtn, allBtn].forEach(b=>{
+        if(b !== activeBtn){ 
+            b.style.display="none"; 
+        } else { 
+            b.style.display="inline-block"; 
+        }
+    });
+}
+
+// ✅ recherche en direct
+searchInput.addEventListener("input", () => {
+    render();
+});
 
 function loadData(){
     Papa.parse(sheetUrl, {
@@ -70,7 +118,7 @@ function loadData(){
         skipEmptyLines: true,
         complete: function(results){
             rawData = results.data;
-            console.log("Données chargées:", rawData); // <-- Vérifier ici
+            console.log("Données chargées:", rawData);
             render();
         },
         error: function(err){
@@ -85,10 +133,21 @@ function render(){
     const thead = table.querySelector("thead");
     const tbody = table.querySelector("tbody");
 
+    const searchText = (searchInput.value || "").toLowerCase();
+
     // Filtrer selon le statut
     let filtered = rawData;
     if(currentStatus !== "Tous"){
         filtered = rawData.filter(r => (r.Statut||"").toLowerCase() === currentStatus.toLowerCase());
+    }
+
+    // Filtrer selon recherche
+    if(searchText){
+        filtered = filtered.filter(person => 
+            Object.values(person).some(val => 
+                (val || "").toLowerCase().includes(searchText)
+            )
+        );
     }
 
     // Rendu des contacts
@@ -96,12 +155,24 @@ function render(){
     filtered.forEach(person=>{
         const card = document.createElement("div");
         card.className="contact-card";
+
+        let professionLine = `<div class="contact-detail"><i class="fas fa-briefcase"></i> ${person.Profession||""}</div>`;
+        let formationLine = `<div class="contact-detail"><i class="fas fa-school"></i> ${person.Formation||""}</div>`;
+
+        // ✅ cacher certaines lignes selon le bouton choisi
+        if(currentStatus === "Travailleur"){ 
+            formationLine = ""; 
+        }
+        if(currentStatus === "Non Travailleur"){ 
+            professionLine = ""; 
+        }
+
         card.innerHTML = `
             <div><strong>${person["Nom et prénoms"]||""}</strong></div>
             <div class="contact-detail"><i class="fas fa-phone"></i> ${person.Contact||""}</div>
-            <div class="contact-detail"><i class="fas fa-briefcase"></i> ${person.Profession||""}</div>
+            ${professionLine}
             <div class="contact-detail"><i class="fas fa-building"></i> ${person.Entreprise||""}</div>
-            <div class="contact-detail"><i class="fas fa-school"></i> ${person.Formation||""}</div>
+            ${formationLine}
             <div class="contact-detail"><i class="fas fa-map-marker-alt"></i> ${person.Quartier||""}, ${person.Pays||""}</div>
             <div class="contact-detail"><i class="fas fa-globe"></i> ${person.Région||""}</div>
         `;
@@ -138,10 +209,3 @@ loadData();
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
