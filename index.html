@@ -11,12 +11,9 @@
     header { background:#4361ee; color:white; padding:20px; text-align:center; }
     header img { max-height:80px; display:block; margin:0 auto 10px; }
     h1 { margin-bottom:5px; }
-    .status-btns { display:flex; justify-content:center; margin:20px 0; gap:10px; }
-    .status-btn { padding:10px 20px; border:none; border-radius:5px; cursor:pointer; color:white; font-weight:bold; }
-    .worker-btn { background:#4cc9f0; } 
-    .non-worker-btn { background:#7209b7; } 
-    .all-btn { background:#4ade80; }
-    .status-btn.active { box-shadow:0 0 0 3px rgba(0,0,0,0.2); }
+    .filter-bar { text-align:center; margin:20px 0; }
+    select, input { padding:8px; border:1px solid #ccc; border-radius:5px; }
+    select { margin-right:10px; }
     .container { max-width:1200px; margin:0 auto; padding:10px; }
     table { width:100%; border-collapse:collapse; margin-top:20px; }
     th, td { border:1px solid #ddd; padding:8px; text-align:left; }
@@ -25,30 +22,28 @@
         background:white; 
         border-radius:5px; 
         padding:12px; 
-        margin:15px 0;  /* ✅ plus d’espace entre les cartes */
+        margin:15px 0; 
         box-shadow:0 2px 5px rgba(0,0,0,0.1); 
+        line-height:1.6; /* espace entre lignes */
     }
-    .contact-detail { margin: 4px 0; } /* ✅ un peu d’espace entre les lignes */
     .contact-detail i { width:20px; color:#4361ee; }
 </style>
 </head>
 <body>
 
 <header>
-    <img src="https://drive.google.com/file/d/1YaTFINCi0WXsvsRo2ZL9LHO5EV0Vl4lr/view?usp=sharing">
+    <img src="https://drive.google.com/uc?id=1YaTFINCi0WXsvsRo2ZL9LHO5EV0Vl4lr" alt="Logo">
     <h1>Annuaire de Begué Baara</h1>
 </header>
 
-<div class="status-btns">
-    <button class="status-btn worker-btn active" id="worker-btn">Travailleurs</button>
-    <button class="status-btn non-worker-btn" id="non-worker-btn">Non Travailleur</button>
-    <button class="status-btn all-btn" id="all-btn">Tous</button>
-</div>
-
-<!-- 🔎 Barre de recherche -->
-<div style="text-align:center; margin: 10px 0 20px 0;">
-    <input type="text" id="search-input" placeholder="Rechercher un nom, une entreprise..." 
-           style="padding:8px; width:60%; border:1px solid #ccc; border-radius:5px;">
+<!-- 🔎 Liste déroulante + recherche -->
+<div class="filter-bar">
+    <select id="status-select">
+        <option value="Travailleur">Travailleurs</option>
+        <option value="Non Travailleur">Non Travailleur</option>
+        <option value="Tous" selected>Tous</option>
+    </select>
+    <input type="text" id="search-input" placeholder="Rechercher un nom, une entreprise...">
 </div>
 
 <div class="container">
@@ -63,53 +58,16 @@
 const sheetUrl = "https://docs.google.com/spreadsheets/d/1lQVgkO9AQ3l73MncVuSmIe4UO2LGAmWBXIAARTonQKY/gviz/tq?tqx=out:csv&gid=1936138638";
 
 let rawData = [];
-let currentStatus = "Travailleur";
+let currentStatus = "Tous";
 
-const workerBtn = document.getElementById("worker-btn");
-const nonWorkerBtn = document.getElementById("non-worker-btn");
-const allBtn = document.getElementById("all-btn");
+const statusSelect = document.getElementById("status-select");
 const searchInput = document.getElementById("search-input");
 
-// ✅ gestion des boutons
-workerBtn.addEventListener('click', ()=>{
-    currentStatus="Travailleur"; 
-    setActiveBtn(workerBtn); 
-    hideOtherButtons(workerBtn);
+statusSelect.addEventListener("change", ()=>{ 
+    currentStatus = statusSelect.value; 
     render();
 });
-nonWorkerBtn.addEventListener('click', ()=>{
-    currentStatus="Non Travailleur"; 
-    setActiveBtn(nonWorkerBtn); 
-    hideOtherButtons(nonWorkerBtn);
-    render();
-});
-allBtn.addEventListener('click', ()=>{
-    currentStatus="Tous"; 
-    setActiveBtn(allBtn); 
-    hideOtherButtons(allBtn);
-    render();
-});
-
-function setActiveBtn(btn){
-    [workerBtn, nonWorkerBtn, allBtn].forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-}
-
-// ✅ masquer les autres boutons
-function hideOtherButtons(activeBtn){
-    [workerBtn, nonWorkerBtn, allBtn].forEach(b=>{
-        if(b !== activeBtn){ 
-            b.style.display="none"; 
-        } else { 
-            b.style.display="inline-block"; 
-        }
-    });
-}
-
-// ✅ recherche en direct
-searchInput.addEventListener("input", () => {
-    render();
-});
+searchInput.addEventListener("input", ()=>{ render(); });
 
 function loadData(){
     Papa.parse(sheetUrl, {
@@ -118,7 +76,6 @@ function loadData(){
         skipEmptyLines: true,
         complete: function(results){
             rawData = results.data;
-            console.log("Données chargées:", rawData);
             render();
         },
         error: function(err){
@@ -133,6 +90,7 @@ function render(){
     const thead = table.querySelector("thead");
     const tbody = table.querySelector("tbody");
 
+    // 🔎 Récupérer le texte de recherche
     const searchText = (searchInput.value || "").toLowerCase();
 
     // Filtrer selon le statut
@@ -153,25 +111,21 @@ function render(){
     // Rendu des contacts
     contactsDiv.innerHTML = "";
     filtered.forEach(person=>{
+        let formationLine = `<div class="contact-detail"><i class="fas fa-school"></i> ${person.Formation||""}</div>`;
+        let professionLine = `<div class="contact-detail"><i class="fas fa-briefcase"></i> ${person.Profession||""}</div>`;
+        let entrepriseLine = `<div class="contact-detail"><i class="fas fa-building"></i> ${person.Entreprise||""}</div>`;
+
+        // Masquer certaines lignes selon statut sélectionné
+        if(currentStatus === "Travailleur"){ formationLine = ""; }
+        if(currentStatus === "Non Travailleur"){ professionLine = ""; entrepriseLine = ""; }
+
         const card = document.createElement("div");
         card.className="contact-card";
-
-        let professionLine = `<div class="contact-detail"><i class="fas fa-briefcase"></i> ${person.Profession||""}</div>`;
-        let formationLine = `<div class="contact-detail"><i class="fas fa-school"></i> ${person.Formation||""}</div>`;
-
-        // ✅ cacher certaines lignes selon le bouton choisi
-        if(currentStatus === "Travailleur"){ 
-            formationLine = ""; 
-        }
-        if(currentStatus === "Non Travailleur"){ 
-            professionLine = ""; 
-        }
-
         card.innerHTML = `
             <div><strong>${person["Nom et prénoms"]||""}</strong></div>
             <div class="contact-detail"><i class="fas fa-phone"></i> ${person.Contact||""}</div>
             ${professionLine}
-            <div class="contact-detail"><i class="fas fa-building"></i> ${person.Entreprise||""}</div>
+            ${entrepriseLine}
             ${formationLine}
             <div class="contact-detail"><i class="fas fa-map-marker-alt"></i> ${person.Quartier||""}, ${person.Pays||""}</div>
             <div class="contact-detail"><i class="fas fa-globe"></i> ${person.Région||""}</div>
@@ -204,7 +158,7 @@ function render(){
     }
 }
 
-// Charger les données au démarrage
+// Charger les données
 loadData();
 </script>
 </body>
