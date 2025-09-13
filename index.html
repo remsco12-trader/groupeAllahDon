@@ -15,7 +15,7 @@
     select, input { padding:8px; border:1px solid #ccc; border-radius:5px; }
     select { margin-right:10px; }
     .container { max-width:1200px; margin:0 auto; padding:10px; }
-    table { width:100%; border-collapse:collapse; margin-top:20px; }
+    table { width:100%; border-collapse:collapse; margin-top:20px; opacity: 0; transition: opacity 0.5s ease-in-out; }
     th, td { border:1px solid #ddd; padding:8px; text-align:left; }
     th { background:#4361ee; color:white; position:sticky; top:0; }
     .contact-card { 
@@ -25,7 +25,11 @@
         margin:15px 0; 
         box-shadow:0 2px 5px rgba(0,0,0,0.1); 
         line-height:1.6;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
     }
+    .contact-card.visible { opacity: 1; transform: translateY(0); }
     .contact-detail i { width:20px; color:#4361ee; }
 </style>
 </head>
@@ -33,10 +37,11 @@
 
 <header>
     <img src="https://i.postimg.cc/hjhrRSX1/Black-White-Simple-Brush-Splash-Illustration-Album-Cover.jpg" 
-         alt="Logo" style="max-height:80px; display:block; margin:0 auto 10px;">
+         alt="Logo">
     <h1>Annuaire de Begué Baara</h1>
 </header>
 
+<!-- 🔎 Liste déroulante + recherche -->
 <div class="filter-bar">
     <select id="status-select">
         <option value="Travailleur">Travailleurs</option>
@@ -114,7 +119,6 @@ function render(){
         let professionLine = `<div class="contact-detail"><i class="fas fa-briefcase"></i> ${person.Profession||""}</div>`;
         let entrepriseLine = `<div class="contact-detail"><i class="fas fa-building"></i> ${person.Entreprise||""}</div>`;
 
-        // Masquer selon statut
         if(currentStatus === "Travailleur"){ formationLine = ""; }
         if(currentStatus === "Non Travailleur"){ professionLine = ""; entrepriseLine = ""; }
 
@@ -130,25 +134,26 @@ function render(){
             <div class="contact-detail"><i class="fas fa-globe"></i> ${person.Région||""}</div>
         `;
         contactsDiv.appendChild(card);
+
+        // Trigger fade-in
+        setTimeout(()=>{ card.classList.add("visible"); }, 50);
     });
 
     // --- TABLEAU ---
     thead.innerHTML = "";
     tbody.innerHTML = "";
+    table.style.opacity = 0; // reset fade-in
     if(rawData.length>0){
         let headers = Object.keys(rawData[0]);
 
-        // Toujours exclure Horodateur + Statut
         headers = headers.filter(h => h !== "Horodateur" && h !== "Statut");
 
-        // Masquer colonnes selon le statut
         if(currentStatus === "Travailleur"){
             headers = headers.filter(h => h !== "Formation");
         } else if(currentStatus === "Non Travailleur"){
             headers = headers.filter(h => h !== "Profession" && h !== "Entreprise");
         }
-        
-        // Entête
+
         const trHead = document.createElement("tr");
         headers.forEach(h=>{
             const th = document.createElement("th");
@@ -157,7 +162,6 @@ function render(){
         });
         thead.appendChild(trHead);
 
-        // Lignes
         filtered.forEach(row=>{
             const tr = document.createElement("tr");
             headers.forEach(h=>{
@@ -167,6 +171,9 @@ function render(){
             });
             tbody.appendChild(tr);
         });
+
+        // Appliquer fade-in du tableau
+        setTimeout(()=>{ table.style.opacity = 1; }, 50);
     }
 }
 
@@ -175,4 +182,3 @@ loadData();
 </script>
 </body>
 </html>
-
